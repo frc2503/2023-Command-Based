@@ -65,7 +65,7 @@ public class Robot extends TimedRobot {
     }
 
     // Call swerveDrive() method, to do all the math and outputs for swerve drive
-    SwerveDrive.swerveDrive(RightStickX * 1, (RightStickY * -1), (RightStickTwist * 1), (1 - ((RightStick.getZ() + 1) / 2)), (1 - ((LeftStick.getZ() + 1) / 2)));
+    SwerveDrive.swerveDrive(RightStickX * 4, (RightStickY * -4), (RightStickTwist * 5), (1 - ((RightStick.getZ() + 1) / 2)), (1 - ((LeftStick.getZ() + 1) / 2)));
     SwerveDrive.setSwerveOutputs();
 
     SmartDashboard.putNumber("Gyro", SwerveDrive.GyroRotation2d.unaryMinus().getDegrees());

@@ -36,7 +36,7 @@ public class SwerveDrive extends SubsystemBase {
 
   private ChassisSpeeds Speeds;
   private SwerveModuleState[] ModuleStates;
-  private SwerveModulePosition[] ModulePositions;
+  public SwerveModulePosition[] ModulePositions;
 
   public Wheel FrontRight;
   public Wheel FrontLeft;
@@ -54,14 +54,6 @@ public class SwerveDrive extends SubsystemBase {
     BackRight = new Wheel(-0.2604, 0.2786);
 
     ModulePositions = new SwerveModulePosition[] {FrontRight.getPosition(), FrontLeft.getPosition(), BackLeft.getPosition(), BackRight.getPosition()};
-
-    // Create a ChassisSpeeds object, which we later pass our desired speeds into to get our wheel speeds and angles
-    Speeds = new ChassisSpeeds();
-    
-    // Initialize and zero gyro
-    Gyro = new AHRS(SerialPort.Port.kMXP);
-    Gyro.calibrate();
-    Gyro.reset();
     
     // Pass in locations of wheels relative to the center of the robot
     // These are later used in the backend, likely to find the angles the wheels need to rotate to when the robot spins 
@@ -71,6 +63,14 @@ public class SwerveDrive extends SubsystemBase {
     // The robot position is unused for now, but might be utilized in autonomous later
     //Odometry = new SwerveDriveOdometry(Kinematics, Gyro.getRotation2d(), new Pose2d(0, 0, new Rotation2d()));
     Odometry = new SwerveDriveOdometry(Kinematics, Gyro.getRotation2d(), ModulePositions, new Pose2d(0, 0, new Rotation2d()));
+
+    // Create a ChassisSpeeds object, which we later pass our desired speeds into to get our wheel speeds and angles
+    Speeds = new ChassisSpeeds();
+    
+    // Initialize and zero gyro
+    Gyro = new AHRS(SerialPort.Port.kMXP);
+    Gyro.calibrate();
+    Gyro.reset();
     
     // The value output by the encoders when at one full rotation
     // Used to get all angle values to the same scale for calculations
@@ -183,10 +183,6 @@ public class SwerveDrive extends SubsystemBase {
     FrontRight.setEncoderVariables(EncoderPosMod);
     BackLeft.setEncoderVariables(EncoderPosMod);
     BackRight.setEncoderVariables(EncoderPosMod);
-
-    // Update Odometry, so the robot knows its position on the field
-    // This section currently only exists so we can use odometry, which solves many other issues, however it will likely be useful for autonomous movement.
-    Odometry.update(GyroRotation2d.unaryMinus(), ModulePositions);
     
     // Do math for swerve drive that is identical between all wheel modules, and then send the angle and speed to the wheels
     FrontRight.optimizeAndCalculateVariables(DriveRampValue);
@@ -196,6 +192,10 @@ public class SwerveDrive extends SubsystemBase {
   }
 
   public void setSwerveOutputs() {
+    // Update Odometry, so the robot knows its position on the field
+    // This section currently only exists so we can use odometry, which solves many other issues, however it will likely be useful for autonomous movement.
+    Odometry.update(GyroRotation2d.unaryMinus(), ModulePositions);
+
     FrontRight.setOutputs(EncoderPosMod);
     FrontLeft.setOutputs(EncoderPosMod);
     BackLeft.setOutputs(EncoderPosMod);
