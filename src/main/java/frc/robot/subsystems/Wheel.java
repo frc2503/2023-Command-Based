@@ -77,8 +77,6 @@ public class Wheel extends SubsystemBase {
     
     // Zero relative encoders, just in case
     DriveEncoder.setPosition(0);
-    DriveEncoder.setPositionConversionFactor((((4 / 39.37) * Math.PI) / 60) * .15);
-    DriveEncoder.setVelocityConversionFactor((((4 / 39.37) * Math.PI) / 60) * .15);
     
     // Define what PID controller the object "DrivePIDController" refers to
     DrivePIDController = Drive.getPIDController();
@@ -210,12 +208,12 @@ public class Wheel extends SubsystemBase {
     //Steer.set(ControlMode.Position, 0);
 
     // Tell the drive motor to drive the wheels at the correct speed
-    DrivePIDController.setReference(ModuleState.speedMetersPerSecond, ControlType.kVelocity);
-    System.out.println(DriveEncoder.getVelocity());
+    DrivePIDController.setReference((((ModuleState.speedMetersPerSecond / ((4 / 39.37) * Math.PI)) * 60) / .15), ControlType.kVelocity);
+    System.out.println(((DriveEncoder.getVelocity() * ((4 / 39.37) * Math.PI)) / 60) * .15);
   }
 
   public SwerveModulePosition getPosition() {
-    Position = new SwerveModulePosition(DriveEncoder.getPosition(), new Rotation2d(SteerAngRad));
+    Position = new SwerveModulePosition(((DriveEncoder.getPosition() * ((4 / 39.37) * Math.PI)) / 60) * .15, new Rotation2d(SteerAngRad));
     return Position;
   }
 }

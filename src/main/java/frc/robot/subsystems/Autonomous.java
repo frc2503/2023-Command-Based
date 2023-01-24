@@ -38,6 +38,7 @@ import java.io.*;
 public class Autonomous extends SubsystemBase {
   public Tracking Limelight;
   private SwerveDrive SwerveDrive;
+  public String AutoFile;
   private String TrajectoryPath;
   private File TrajectoryFile;
   private TrajectoryConfig TrajectoryConfig;
@@ -71,7 +72,7 @@ public class Autonomous extends SubsystemBase {
     AutoStage = 0;
   }
 
-  public void initTrajectory(String AutoFile) throws FileNotFoundException {
+  public void initTrajectory() throws FileNotFoundException {
     TrajectoryPath = ("/deploy/" + AutoFile);
     TrajectoryFile = new File(TrajectoryPath);
     AutoReader = new Scanner(TrajectoryFile);

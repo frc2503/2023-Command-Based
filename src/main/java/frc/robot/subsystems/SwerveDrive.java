@@ -53,17 +53,6 @@ public class SwerveDrive extends SubsystemBase {
     BackLeft = new Wheel(-0.2604, -0.2786);
     BackRight = new Wheel(-0.2604, 0.2786);
 
-    ModulePositions = new SwerveModulePosition[] {FrontRight.getPosition(), FrontLeft.getPosition(), BackLeft.getPosition(), BackRight.getPosition()};
-    
-    // Pass in locations of wheels relative to the center of the robot
-    // These are later used in the backend, likely to find the angles the wheels need to rotate to when the robot spins 
-    Kinematics = new SwerveDriveKinematics(FrontRight.Location, FrontLeft.Location, BackLeft.Location, BackRight.Location);
-    
-    // Pass in wheel module locations, as well as initial robot angle and position for field oriented drive
-    // The robot position is unused for now, but might be utilized in autonomous later
-    //Odometry = new SwerveDriveOdometry(Kinematics, Gyro.getRotation2d(), new Pose2d(0, 0, new Rotation2d()));
-    Odometry = new SwerveDriveOdometry(Kinematics, Gyro.getRotation2d(), ModulePositions, new Pose2d(0, 0, new Rotation2d()));
-
     // Create a ChassisSpeeds object, which we later pass our desired speeds into to get our wheel speeds and angles
     Speeds = new ChassisSpeeds();
     
@@ -81,6 +70,18 @@ public class SwerveDrive extends SubsystemBase {
     DriveRampValue = .05;
   }
 
+  public void initKinematicsAndOdometry() {
+    ModulePositions = new SwerveModulePosition[] {FrontRight.getPosition(), FrontLeft.getPosition(), BackLeft.getPosition(), BackRight.getPosition()};
+    
+    // Pass in locations of wheels relative to the center of the robot
+    // These are later used in the backend, likely to find the angles the wheels need to rotate to when the robot spins 
+    Kinematics = new SwerveDriveKinematics(FrontRight.Location, FrontLeft.Location, BackLeft.Location, BackRight.Location);
+    
+    // Pass in wheel module locations, as well as initial robot angle and position for field oriented drive
+    // The robot position is unused for now, but might be utilized in autonomous later
+    //Odometry = new SwerveDriveOdometry(Kinematics, Gyro.getRotation2d(), new Pose2d(0, 0, new Rotation2d()));
+    Odometry = new SwerveDriveOdometry(Kinematics, Gyro.getRotation2d(), ModulePositions, new Pose2d(0, 0, new Rotation2d()));
+  }
   /**
 	 * Assign motor controllers their CAN numbers, and call the initEncodersAndPIDControllers() method for each wheel module
 	 *
