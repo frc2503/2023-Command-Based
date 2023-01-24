@@ -177,7 +177,9 @@ public class SwerveDrive extends SubsystemBase {
 
     // Back right module state
     BackRight.ModuleState = ModuleStates[3];
+  }
 
+  public void setVariablesAndOptimize() {
     // Do math to get multiple variables out of the encoder position
     FrontLeft.setEncoderVariables(EncoderPosMod);
     FrontRight.setEncoderVariables(EncoderPosMod);
@@ -210,7 +212,10 @@ public class SwerveDrive extends SubsystemBase {
     return Gyro.getRotation2d().unaryMinus();
   }
 
-  public SwerveModuleState[] getModuleStates(SwerveModuleState[] ModuleStates) {
-    return ModuleStates;
+  public void setModuleStates(SwerveModuleState[] DesiredStates) {
+    SwerveDriveKinematics.desaturateWheelSpeeds(DesiredStates, 2);
+    ModuleStates = DesiredStates;
+    setVariablesAndOptimize();
+    setSwerveOutputs();
   }
 }

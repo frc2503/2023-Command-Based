@@ -8,7 +8,7 @@ package frc.robot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.networktables.*;
 import frc.robot.subsystems.SwerveDrive;
@@ -47,6 +47,11 @@ public class Robot extends TimedRobot {
   }
 
   @Override
+  public void robotPeriodic() {
+    CommandScheduler.getInstance().run();
+  }
+
+  @Override
   public void teleopPeriodic() {
     // Assign stick inputs to variables, to prevent discrepancies
     RightStickX = RightStick.getX();
@@ -66,6 +71,7 @@ public class Robot extends TimedRobot {
 
     // Call swerveDrive() method, to do all the math and outputs for swerve drive
     SwerveDrive.swerveDrive(RightStickX * 4, (RightStickY * -4), (RightStickTwist * 5), (1 - ((RightStick.getZ() + 1) / 2)), (1 - ((LeftStick.getZ() + 1) / 2)));
+    SwerveDrive.setVariablesAndOptimize();
     SwerveDrive.setSwerveOutputs();
 
     SmartDashboard.putNumber("Gyro", SwerveDrive.GyroRotation2d.unaryMinus().getDegrees());
