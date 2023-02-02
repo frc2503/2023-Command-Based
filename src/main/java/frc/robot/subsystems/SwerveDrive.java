@@ -216,6 +216,28 @@ public class SwerveDrive extends SubsystemBase {
   public void setModuleStates(SwerveModuleState[] DesiredStates) {
     SwerveDriveKinematics.desaturateWheelSpeeds(DesiredStates, 2);
     ModuleStates = DesiredStates;
+    
+    // Front left module state
+    FrontLeft.ModuleState = new SwerveModuleState(-ModuleStates[0].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[0].angle.getRadians()));
+
+    // Front right module state
+    FrontRight.ModuleState = new SwerveModuleState(-ModuleStates[1].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[1].angle.getRadians()));
+
+    // Back left module state
+    BackLeft.ModuleState = new SwerveModuleState(-ModuleStates[2].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[2].angle.getRadians()));
+
+    // Back right module state
+    BackRight.ModuleState = new SwerveModuleState(-ModuleStates[3].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[3].angle.getRadians()));
+
+    // Need to set the gyro angle to a variable in order to invert the output
+    GyroRotation2d = Gyro.getRotation2d();
+
+    setVariablesAndOptimize();
+    setSwerveOutputs();
+  }
+
+  public void stop() {
+    swerveDrive(0.0, 0.0, 0.0, 1.0, 1.0);
     setVariablesAndOptimize();
     setSwerveOutputs();
   }

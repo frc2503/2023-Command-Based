@@ -37,9 +37,9 @@ import java.io.*;
 
 public class Autonomous extends SubsystemBase {
   public Tracking Limelight;
-  private SwerveDrive SwerveDrive;
+  private SwerveDrive Swerve;
   public String AutoFile;
-  private String TrajectoryPath;
+  private Path TrajectoryPath;
   private File TrajectoryFile;
   private TrajectoryConfig TrajectoryConfig;
   private Trajectory PlaceFirstObjectTrajectory;
@@ -48,19 +48,19 @@ public class Autonomous extends SubsystemBase {
   private Trajectory ToChargerTrajectory;
   private SwerveDriveKinematicsConstraint SwerveDriveMaxSpeed;
   private Constraints PIDConstraints;
-  private Subsystem[] RequiredSubsystems;
   private Scanner AutoReader;
   private List<String> Lines;
   private List<String> CurrentLine;
   private List<Double> XPositions;
   private List<Double> YPositions;
   private List<Double> Angles;
-  private Boolean HasChargerAuto;
+  private Boolean HasChargerAuto = false;
   private SwerveControllerCommand PlaceFirstObject;
   private SwerveControllerCommand GetSecondObject;
   private SwerveControllerCommand PlaceSecondObject;
   private SwerveControllerCommand ToCharger;
   private Integer AutoStage;
+  private Boolean IsScheduled = false;
 
   public Autonomous() {
     Limelight = new Tracking();
@@ -72,28 +72,29 @@ public class Autonomous extends SubsystemBase {
     AutoStage = 0;
   }
 
-  public void initTrajectory() throws FileNotFoundException {
-    TrajectoryPath = ("/deploy/" + AutoFile);
-    TrajectoryFile = new File(TrajectoryPath);
+  public void initTrajectory(SwerveDrive SwerveDrive) throws FileNotFoundException {
+    Swerve = SwerveDrive;
+    TrajectoryPath = Filesystem.getDeployDirectory().toPath().resolve("output/" + AutoFile);
+    TrajectoryFile = TrajectoryPath.toFile();
     AutoReader = new Scanner(TrajectoryFile);
-    SwerveDriveMaxSpeed = new SwerveDriveKinematicsConstraint(SwerveDrive.Kinematics, 2);
+    SwerveDriveMaxSpeed = new SwerveDriveKinematicsConstraint(Swerve.Kinematics, 2);
     PIDConstraints = new Constraints(2, 2);
-    TrajectoryConfig = new TrajectoryConfig(2, 2).setKinematics(SwerveDrive.Kinematics).addConstraint(SwerveDriveMaxSpeed);
-
+    TrajectoryConfig = new TrajectoryConfig(2, 2).setKinematics(Swerve.Kinematics).addConstraint(SwerveDriveMaxSpeed);
+    
     if (AutoReader.hasNextLine()) {
       AutoReader.nextLine();
     }
     while (AutoReader.hasNextLine()) {
       Lines.add(AutoReader.nextLine());
     }
-    for (Integer Index = 0; Index <= Lines.size(); Index++) {
+    for (Integer Index = 0; Index <= Lines.size() - 1; Index++) {
       CurrentLine.addAll(Arrays.asList(Lines.get(Index).split(",")));
       XPositions.add(Double.parseDouble(CurrentLine.get(0)));
       YPositions.add(Double.parseDouble(CurrentLine.get(1)));
-      if (TrajectoryPath.contains("Red")) {
+      if (TrajectoryPath.toString().contains("Red")) {
         Angles.add(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))) - Math.PI);
       }
-      if (TrajectoryPath.contains("Blue")) {
+      if (TrajectoryPath.toString().contains("Blue")) {
         Angles.add(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))));
       }
       if (Index == 6) {
@@ -102,26 +103,31 @@ public class Autonomous extends SubsystemBase {
       CurrentLine.clear();
     }
     AutoReader.close();
-    SwerveDrive.Odometry.resetPosition(new Rotation2d(Angles.get(0)), new SwerveModulePosition[] {SwerveDrive.FrontRight.getPosition(), SwerveDrive.FrontLeft.getPosition(), SwerveDrive.BackLeft.getPosition(), SwerveDrive.BackRight.getPosition()}, new Pose2d(new Translation2d(XPositions.get(0), YPositions.get(0)), new Rotation2d(Angles.get(0))));
+    Swerve.Odometry.resetPosition(new Rotation2d(Angles.get(0)), new SwerveModulePosition[] {SwerveDrive.FrontRight.getPosition(), SwerveDrive.FrontLeft.getPosition(), SwerveDrive.BackLeft.getPosition(), SwerveDrive.BackRight.getPosition()}, new Pose2d(new Translation2d(XPositions.get(0), YPositions.get(0)), new Rotation2d(Angles.get(0))));
 
     PlaceFirstObjectTrajectory = TrajectoryGenerator.generateTrajectory(new Pose2d(new Translation2d(XPositions.get(0), YPositions.get(0)), new Rotation2d(Angles.get(0))), List.of(), new Pose2d(new Translation2d(XPositions.get(1), YPositions.get(1)), new Rotation2d(Angles.get(1))), TrajectoryConfig);
-    GetSecondObjectTrajectory = TrajectoryGenerator.generateTrajectory(new Pose2d(new Translation2d(XPositions.get(1), YPositions.get(1)), new Rotation2d(Angles.get(1))), List.of(new Translation2d(XPositions.get(2), YPositions.get(2))), new Pose2d(new Translation2d(XPositions.get(3), YPositions.get(3)), new Rotation2d(Angles.get(3))), TrajectoryConfig);
-    PlaceSecondObjectTrajectory = TrajectoryGenerator.generateTrajectory(new Pose2d(new Translation2d(XPositions.get(3), YPositions.get(3)), new Rotation2d(Angles.get(3))), List.of(new Translation2d(XPositions.get(4), YPositions.get(4))), new Pose2d(new Translation2d(XPositions.get(5), YPositions.get(5)), new Rotation2d(Angles.get(5))), TrajectoryConfig);
-    ToChargerTrajectory = TrajectoryGenerator.generateTrajectory(new Pose2d(new Translation2d(XPositions.get(5), YPositions.get(5)), new Rotation2d(Angles.get(5))), List.of(), new Pose2d(new Translation2d(XPositions.get(6), YPositions.get(6)), new Rotation2d(Angles.get(6))), TrajectoryConfig);
+    //GetSecondObjectTrajectory = TrajectoryGenerator.generateTrajectory(new Pose2d(new Translation2d(XPositions.get(1), YPositions.get(1)), new Rotation2d(Angles.get(1))), List.of(new Translation2d(XPositions.get(2), YPositions.get(2))), new Pose2d(new Translation2d(XPositions.get(3), YPositions.get(3)), new Rotation2d(Angles.get(3))), TrajectoryConfig);
+    //PlaceSecondObjectTrajectory = TrajectoryGenerator.generateTrajectory(new Pose2d(new Translation2d(XPositions.get(3), YPositions.get(3)), new Rotation2d(Angles.get(3))), List.of(new Translation2d(XPositions.get(4), YPositions.get(4))), new Pose2d(new Translation2d(XPositions.get(5), YPositions.get(5)), new Rotation2d(Angles.get(5))), TrajectoryConfig);
+    //ToChargerTrajectory = TrajectoryGenerator.generateTrajectory(new Pose2d(new Translation2d(XPositions.get(5), YPositions.get(5)), new Rotation2d(Angles.get(5))), List.of(), new Pose2d(new Translation2d(XPositions.get(6), YPositions.get(6)), new Rotation2d(Angles.get(6))), TrajectoryConfig);
 
-    PlaceFirstObject = new SwerveControllerCommand(PlaceFirstObjectTrajectory, SwerveDrive::getPose, SwerveDrive.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), SwerveDrive::setModuleStates, RequiredSubsystems);
-    GetSecondObject = new SwerveControllerCommand(GetSecondObjectTrajectory, SwerveDrive::getPose, SwerveDrive.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), SwerveDrive::setModuleStates, RequiredSubsystems);
-    PlaceSecondObject = new SwerveControllerCommand(PlaceSecondObjectTrajectory, SwerveDrive::getPose, SwerveDrive.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), SwerveDrive::setModuleStates, RequiredSubsystems);
-    ToCharger = new SwerveControllerCommand(ToChargerTrajectory, SwerveDrive::getPose, SwerveDrive.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), SwerveDrive::setModuleStates, RequiredSubsystems);
+    PlaceFirstObject = new SwerveControllerCommand(PlaceFirstObjectTrajectory, Swerve::getPose, Swerve.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), Swerve::setModuleStates, Swerve);
+    //GetSecondObject = new SwerveControllerCommand(GetSecondObjectTrajectory, Swerve::getPose, Swerve.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), Swerve::setModuleStates, Swerve);
+    //PlaceSecondObject = new SwerveControllerCommand(PlaceSecondObjectTrajectory, Swerve::getPose, Swerve.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), Swerve::setModuleStates, Swerve);
+    //ToCharger = new SwerveControllerCommand(ToChargerTrajectory, Swerve::getPose, Swerve.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), Swerve::setModuleStates, Swerve);
   }
 
   public void runAutonomous() {
     if (AutoStage == 0) {
-      PlaceFirstObject.andThen(() -> SwerveDrive.swerveDrive(0.0, 0.0, 0.0, 1.0, 1.0));
+      if (!IsScheduled) {
+        PlaceFirstObject.andThen(() -> Swerve.stop()).schedule();
+        IsScheduled = true;
+      }
       if (PlaceFirstObject.isFinished()) {
         AutoStage = 1;
+        IsScheduled = false;
       }
     }
+    /**
     if (AutoStage == 1) {
       //Extend arm
       //Line up with Limelight
@@ -130,9 +136,13 @@ public class Autonomous extends SubsystemBase {
       AutoStage = 2;
     }
     if (AutoStage == 2) {
-      GetSecondObject.andThen(() -> SwerveDrive.swerveDrive(0.0, 0.0, 0.0, 1.0, 1.0));
+      if (!IsScheduled) {
+        GetSecondObject.andThen(() -> Swerve.stop()).schedule();
+        IsScheduled = true;
+      }
       if (GetSecondObject.isFinished()) {
         AutoStage = 3;
+        IsScheduled = false;
       }
     }
     if (AutoStage == 3) {
@@ -144,9 +154,13 @@ public class Autonomous extends SubsystemBase {
       AutoStage = 4;
     }
     if (AutoStage == 4) {
-      PlaceSecondObject.andThen(() -> SwerveDrive.swerveDrive(0.0, 0.0, 0.0, 1.0, 1.0));
+      if (!IsScheduled) {
+        PlaceSecondObject.andThen(() -> Swerve.stop()).schedule();
+        IsScheduled = true;
+      }
       if (PlaceSecondObject.isFinished()) {
         AutoStage = 5;
+        IsScheduled = false;
       }
     }
     if (AutoStage == 5) {
@@ -157,13 +171,18 @@ public class Autonomous extends SubsystemBase {
       AutoStage = 6;
     }
     if (AutoStage == 6 & HasChargerAuto) {
-      ToCharger.andThen(() -> SwerveDrive.swerveDrive(0.0, 0.0, 0.0, 1.0, 1.0));
+      if (!IsScheduled) {
+        ToCharger.andThen(() -> Swerve.stop()).schedule();
+        IsScheduled = true;
+      }
       if (ToCharger.isFinished()) {
         AutoStage = 7;
+        IsScheduled = false;
       }
     }
     if (AutoStage == 7) {
       //Auto balance on charger
     }
+    */
   }
 }

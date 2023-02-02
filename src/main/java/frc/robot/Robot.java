@@ -5,8 +5,13 @@
 package frc.robot;
 
 
+import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.PneumaticsModuleType;
+import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.wpilibj.shuffleboard.*;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -23,6 +28,8 @@ import edu.wpi.first.util.sendable.SendableBuilder;
 import frc.robot.subsystems.Autonomous;
 import frc.robot.subsystems.SwerveDrive;
 
+
+
 public class Robot extends TimedRobot {
   // Define objects and variables
   private Joystick LeftStick;
@@ -31,6 +38,8 @@ public class Robot extends TimedRobot {
   private Double RightStickY;
   private Double RightStickTwist;
   private Double[] MotorCurrents;
+  private String PrevAuto;
+
   public SwerveDrive SwerveDrive;
   public Autonomous Autonomous;
 
@@ -39,40 +48,68 @@ public class Robot extends TimedRobot {
   public NetworkTableEntry GyroAng;
   public SendableChooser<String> AutoChooser;
 
-  private CANSparkMax IntakeBottom;
-  private CANSparkMax IntakeTop;
+  //private CANSparkMax IntakeBottom;
+  //private CANSparkMax IntakeTop;
+  private CANSparkMax Indexer;
+
+  private Compressor Pump;
+  private DoubleSolenoid Intake1;
 
   @Override
   public void robotInit() {
-    // Start getting video from USB camera
-    CameraServer.startAutomaticCapture();
-    
     Inst = NetworkTableInstance.getDefault();
 
     AutoChooser = new SendableChooser<String>();
     AutoChooser.addOption("Red1Charger", "Red1Charger");
+    AutoChooser.addOption("RedTest", "RedTest");
     SmartDashboard.putData("AutoChooser", AutoChooser);
     
     // Assign joysticks to the "LeftStick" and "RightStick" objects
     LeftStick = new Joystick(0);
     RightStick = new Joystick(1);
 
-    IntakeBottom = new CANSparkMax(9, MotorType.kBrushless);
-    IntakeTop = new CANSparkMax(10, MotorType.kBrushless);
+    //IntakeBottom = new CANSparkMax(9, MotorType.kBrushless);
+    //IntakeTop = new CANSparkMax(10, MotorType.kBrushless);
+    Indexer = new CANSparkMax(11, MotorType.kBrushless);
 
-    // Create an object for the SwerveDrive class
+    Pump = new Compressor(0, PneumaticsModuleType.CTREPCM);
+    Intake1 = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1);
+    Intake1.set(Value.kReverse);
+
+    // Instantiate an object for each class
     SwerveDrive = new SwerveDrive();
+    Autonomous = new Autonomous();
 
     // Call SwerveDrive methods, their descriptions are in the SwerveDrive.java file
     SwerveDrive.initMotorControllers(1, 5, 2, 6, 3, 7, 4, 8);
     SwerveDrive.setPID(0.000175, 0.0000007, 0.0000001, 0.0, 8.0, 0.01, 0.01);
     SwerveDrive.initKinematicsAndOdometry();
+    PrevAuto = AutoChooser.getSelected();
+    Autonomous.AutoFile = AutoChooser.getSelected();
+    if (AutoChooser.getSelected() != null) {
+    try {
+        Autonomous.initTrajectory(SwerveDrive);
+      } catch (FileNotFoundException e) {
+        System.out.println("AUTO NOT FOUND");
+      }
+    }
+    Pump.enableDigital();
   }
 
   @Override
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
+    if (PrevAuto != AutoChooser.getSelected()) {
+      Autonomous.AutoFile = AutoChooser.getSelected();
+      try {
+        Autonomous.initTrajectory(SwerveDrive);
+      } catch (FileNotFoundException e) {
+        System.out.println("AUTO NOT FOUND");
+      }
+      PrevAuto = AutoChooser.getSelected();
+    }
   }
+ 
 
   @Override
   public void teleopPeriodic() {
@@ -106,24 +143,28 @@ public class Robot extends TimedRobot {
       SwerveDrive.Gyro.reset();
     }
     if (RightStick.getRawButton(3)) {
-      IntakeBottom.set(.3);
-      IntakeTop.set(-.3);
+      //IntakeBottom.set(.3);
+      //IntakeTop.set(-.3);
     }
     else {
-      IntakeBottom.set(0);
-      IntakeTop.set(0);
+      //IntakeBottom.set(0);
+      //IntakeTop.set(0);
+    }
+    if (RightStick.getRawButton(5)) {
+      Indexer.set(.15);
+    }
+    else {
+      Indexer.set(0);
+    }
+    if (RightStick.getRawButtonPressed(4)) {
+      Intake1.toggle();
     }
   }
 
   //Autonomous right away
   @Override
   public void autonomousInit(){
-    try {
-      Autonomous.initTrajectory();
-    }
-    catch (FileNotFoundException Error) {
-      System.out.println("AUTO NOT FOUND");
-    }
+    Autonomous.AutoFile = AutoChooser.getSelected();
   }
 
   //Autonomous repeat
