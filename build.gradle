@@ -35,7 +35,7 @@ deploy {
                 // Copy paths
                 frcStaticFileDeploy(getArtifactTypeClass('FileTreeArtifact')) {
                     files = project.fileTree('Paths')
-                    directory = '/home/lvuser/deploy/output'
+                    directory = '/home/lvuser/deploy/output/paths'
                 }
             }
         }

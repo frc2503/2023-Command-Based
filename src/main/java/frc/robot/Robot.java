@@ -7,11 +7,11 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
-import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
+import edu.wpi.first.wpilibj.DoubleSolenoid.*;
 import edu.wpi.first.wpilibj.shuffleboard.*;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -20,13 +20,14 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import java.io.FileNotFoundException;
 
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.SparkMaxPIDController;
+import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
-
-import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.networktables.*;
 import edu.wpi.first.util.sendable.SendableBuilder;
 import frc.robot.subsystems.Autonomous;
 import frc.robot.subsystems.SwerveDrive;
+import frc.robot.subsystems.Tracking;
 
 
 
@@ -38,9 +39,11 @@ public class Robot extends TimedRobot {
   private Double RightStickY;
   private Double RightStickTwist;
   private Double[] MotorCurrents;
+  private String[] AutoNames;
   private String PrevAuto;
 
   public SwerveDrive SwerveDrive;
+  public Tracking Tracking;
   public Autonomous Autonomous;
 
   public NetworkTableInstance Inst;
@@ -48,9 +51,9 @@ public class Robot extends TimedRobot {
   public NetworkTableEntry GyroAng;
   public SendableChooser<String> AutoChooser;
 
-  //private CANSparkMax IntakeBottom;
-  //private CANSparkMax IntakeTop;
+  private CANSparkMax Intake;
   private CANSparkMax Indexer;
+  private SparkMaxPIDController IntakePID;
 
   private Compressor Pump;
   private DoubleSolenoid Intake1;
@@ -60,16 +63,18 @@ public class Robot extends TimedRobot {
     Inst = NetworkTableInstance.getDefault();
 
     AutoChooser = new SendableChooser<String>();
-    AutoChooser.addOption("Red1Charger", "Red1Charger");
-    AutoChooser.addOption("RedTest", "RedTest");
+    AutoNames = Filesystem.getDeployDirectory().toPath().resolve("output/paths").toFile().list();
+    for (Integer Index = 0; Index <= AutoNames.length - 1; Index++) {
+      AutoChooser.addOption(AutoNames[Index], AutoNames[Index]);
+    }
+    // hehe funne number
     SmartDashboard.putData("AutoChooser", AutoChooser);
     
     // Assign joysticks to the "LeftStick" and "RightStick" objects
     LeftStick = new Joystick(0);
     RightStick = new Joystick(1);
 
-    //IntakeBottom = new CANSparkMax(9, MotorType.kBrushless);
-    //IntakeTop = new CANSparkMax(10, MotorType.kBrushless);
+    Intake = new CANSparkMax(9, MotorType.kBrushed);
     Indexer = new CANSparkMax(11, MotorType.kBrushless);
 
     Pump = new Compressor(0, PneumaticsModuleType.CTREPCM);
@@ -78,7 +83,8 @@ public class Robot extends TimedRobot {
 
     // Instantiate an object for each class
     SwerveDrive = new SwerveDrive();
-    Autonomous = new Autonomous();
+    Tracking = new Tracking(SwerveDrive);
+    Autonomous = new Autonomous(SwerveDrive, Tracking);
 
     // Call SwerveDrive methods, their descriptions are in the SwerveDrive.java file
     SwerveDrive.initMotorControllers(1, 5, 2, 6, 3, 7, 4, 8);
@@ -88,7 +94,7 @@ public class Robot extends TimedRobot {
     Autonomous.AutoFile = AutoChooser.getSelected();
     if (AutoChooser.getSelected() != null) {
     try {
-        Autonomous.initTrajectory(SwerveDrive);
+        Autonomous.initTrajectory();
       } catch (FileNotFoundException e) {
         System.out.println("AUTO NOT FOUND");
       }
@@ -102,7 +108,7 @@ public class Robot extends TimedRobot {
     if (PrevAuto != AutoChooser.getSelected()) {
       Autonomous.AutoFile = AutoChooser.getSelected();
       try {
-        Autonomous.initTrajectory(SwerveDrive);
+        Autonomous.initTrajectory();
       } catch (FileNotFoundException e) {
         System.out.println("AUTO NOT FOUND");
       }
@@ -129,10 +135,15 @@ public class Robot extends TimedRobot {
       RightStickTwist = 0.0;
     }
 
-    // Call swerveDrive() method, to do all the math and outputs for swerve drive
-    SwerveDrive.swerveDrive(RightStickX * 2, (RightStickY * -2), (RightStickTwist * 2.5), (1 - ((RightStick.getZ() + 1) / 2)), (1 - ((LeftStick.getZ() + 1) / 2)));
-    SwerveDrive.setVariablesAndOptimize();
-    SwerveDrive.setSwerveOutputs();
+    if (RightStick.getRawButton(6)) {
+      Tracking.centerOnCone();
+    }
+    else {
+      // Call swerveDrive() method, to do all the math and outputs for swerve drive
+      SwerveDrive.swerveDrive(RightStickX * 2, (RightStickY * -2), (RightStickTwist * 2.5), (1 - ((RightStick.getZ() + 1) / 2)), (1 - ((LeftStick.getZ() + 1) / 2)));
+      SwerveDrive.setVariablesAndOptimize();
+      SwerveDrive.setSwerveOutputs();
+    }
 
     SmartDashboard.putNumber("Gyro", SwerveDrive.GyroRotation2d.unaryMinus().getDegrees());
 
@@ -143,12 +154,10 @@ public class Robot extends TimedRobot {
       SwerveDrive.Gyro.reset();
     }
     if (RightStick.getRawButton(3)) {
-      //IntakeBottom.set(.3);
-      //IntakeTop.set(-.3);
+      Intake.set(1);
     }
     else {
-      //IntakeBottom.set(0);
-      //IntakeTop.set(0);
+      Intake.set(0);
     }
     if (RightStick.getRawButton(5)) {
       Indexer.set(.15);
@@ -164,7 +173,7 @@ public class Robot extends TimedRobot {
   //Autonomous right away
   @Override
   public void autonomousInit(){
-    Autonomous.AutoFile = AutoChooser.getSelected();
+    System.out.println("Start Y: " + SwerveDrive.Odometry.getPoseMeters().getY());
   }
 
   //Autonomous repeat

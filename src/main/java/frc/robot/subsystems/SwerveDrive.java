@@ -197,6 +197,7 @@ public class SwerveDrive extends SubsystemBase {
   public void setSwerveOutputs() {
     // Update Odometry, so the robot knows its position on the field
     // This section currently only exists so we can use odometry, which solves many other issues, however it will likely be useful for autonomous movement.
+    ModulePositions = new SwerveModulePosition[] {FrontRight.getPosition(), FrontLeft.getPosition(), BackLeft.getPosition(), BackRight.getPosition()};
     Odometry.update(GyroRotation2d.unaryMinus(), ModulePositions);
 
     FrontRight.setOutputs(EncoderPosMod);
@@ -218,19 +219,21 @@ public class SwerveDrive extends SubsystemBase {
     ModuleStates = DesiredStates;
     
     // Front left module state
-    FrontLeft.ModuleState = new SwerveModuleState(-ModuleStates[0].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[0].angle.getRadians()));
+    FrontLeft.ModuleState = new SwerveModuleState(ModuleStates[0].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[0].angle.getRadians()));
 
     // Front right module state
-    FrontRight.ModuleState = new SwerveModuleState(-ModuleStates[1].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[1].angle.getRadians()));
+    FrontRight.ModuleState = new SwerveModuleState(ModuleStates[1].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[1].angle.getRadians()));
 
     // Back left module state
-    BackLeft.ModuleState = new SwerveModuleState(-ModuleStates[2].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[2].angle.getRadians()));
+    BackLeft.ModuleState = new SwerveModuleState(ModuleStates[2].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[2].angle.getRadians()));
 
     // Back right module state
-    BackRight.ModuleState = new SwerveModuleState(-ModuleStates[3].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[3].angle.getRadians()));
+    BackRight.ModuleState = new SwerveModuleState(ModuleStates[3].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[3].angle.getRadians()));
 
     // Need to set the gyro angle to a variable in order to invert the output
     GyroRotation2d = Gyro.getRotation2d();
+
+    //System.out.println(Odometry.getPoseMeters().getX());
 
     setVariablesAndOptimize();
     setSwerveOutputs();
@@ -240,5 +243,6 @@ public class SwerveDrive extends SubsystemBase {
     swerveDrive(0.0, 0.0, 0.0, 1.0, 1.0);
     setVariablesAndOptimize();
     setSwerveOutputs();
+    System.out.println("End Y: " + Odometry.getPoseMeters().getY());
   }
 }

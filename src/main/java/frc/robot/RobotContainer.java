@@ -22,8 +22,8 @@ public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final Wheel WheelSubsystem = new Wheel(0, 0);
   private final SwerveDrive SwerveDriveSubsystem = new SwerveDrive();
-  private final Autonomous AutonomousSubsystem = new Autonomous();
-  private final Tracking Tracking = new Tracking();
+  private final Tracking Tracking = new Tracking(SwerveDriveSubsystem);
+  private final Autonomous AutonomousSubsystem = new Autonomous(SwerveDriveSubsystem, Tracking);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {

@@ -36,7 +36,7 @@ import java.util.Scanner;
 import java.io.*;
 
 public class Autonomous extends SubsystemBase {
-  public Tracking Limelight;
+  public Tracking Tracking;
   private SwerveDrive Swerve;
   public String AutoFile;
   private Path TrajectoryPath;
@@ -62,8 +62,9 @@ public class Autonomous extends SubsystemBase {
   private Integer AutoStage;
   private Boolean IsScheduled = false;
 
-  public Autonomous() {
-    Limelight = new Tracking();
+  public Autonomous(SwerveDrive SwerveDrive, Tracking Track) {
+    Swerve = SwerveDrive;
+    Tracking = Track;
     Lines = new ArrayList<String>();
     CurrentLine = new ArrayList<String>();
     XPositions = new ArrayList<Double>();
@@ -72,15 +73,22 @@ public class Autonomous extends SubsystemBase {
     AutoStage = 0;
   }
 
-  public void initTrajectory(SwerveDrive SwerveDrive) throws FileNotFoundException {
-    Swerve = SwerveDrive;
+  public void initTrajectory() throws FileNotFoundException {
     TrajectoryPath = Filesystem.getDeployDirectory().toPath().resolve("output/" + AutoFile);
+    System.out.println(TrajectoryPath.toString());
     TrajectoryFile = TrajectoryPath.toFile();
     AutoReader = new Scanner(TrajectoryFile);
-    SwerveDriveMaxSpeed = new SwerveDriveKinematicsConstraint(Swerve.Kinematics, 2);
-    PIDConstraints = new Constraints(2, 2);
-    TrajectoryConfig = new TrajectoryConfig(2, 2).setKinematics(Swerve.Kinematics).addConstraint(SwerveDriveMaxSpeed);
-    
+    SwerveDriveMaxSpeed = new SwerveDriveKinematicsConstraint(Swerve.Kinematics, 1);
+    PIDConstraints = new Constraints(1, 2);
+    TrajectoryConfig = new TrajectoryConfig(1, 1).setKinematics(Swerve.Kinematics).addConstraint(SwerveDriveMaxSpeed);
+    Lines.clear();
+    CurrentLine.clear();
+    XPositions.clear();
+    YPositions.clear();
+    Angles.clear();
+    AutoStage = 0;
+    Swerve.Gyro.reset();
+
     if (AutoReader.hasNextLine()) {
       AutoReader.nextLine();
     }
@@ -91,8 +99,9 @@ public class Autonomous extends SubsystemBase {
       CurrentLine.addAll(Arrays.asList(Lines.get(Index).split(",")));
       XPositions.add(Double.parseDouble(CurrentLine.get(0)));
       YPositions.add(Double.parseDouble(CurrentLine.get(1)));
+      System.out.println(CurrentLine.get(1));
       if (TrajectoryPath.toString().contains("Red")) {
-        Angles.add(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))) - Math.PI);
+        Angles.add(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))) + Math.PI);
       }
       if (TrajectoryPath.toString().contains("Blue")) {
         Angles.add(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))));
@@ -103,7 +112,7 @@ public class Autonomous extends SubsystemBase {
       CurrentLine.clear();
     }
     AutoReader.close();
-    Swerve.Odometry.resetPosition(new Rotation2d(Angles.get(0)), new SwerveModulePosition[] {SwerveDrive.FrontRight.getPosition(), SwerveDrive.FrontLeft.getPosition(), SwerveDrive.BackLeft.getPosition(), SwerveDrive.BackRight.getPosition()}, new Pose2d(new Translation2d(XPositions.get(0), YPositions.get(0)), new Rotation2d(Angles.get(0))));
+    Swerve.Odometry.resetPosition(new Rotation2d(Angles.get(0)), new SwerveModulePosition[] {Swerve.FrontRight.getPosition(), Swerve.FrontLeft.getPosition(), Swerve.BackLeft.getPosition(), Swerve.BackRight.getPosition()}, new Pose2d(new Translation2d(XPositions.get(0), YPositions.get(0)), new Rotation2d(0)));
 
     PlaceFirstObjectTrajectory = TrajectoryGenerator.generateTrajectory(new Pose2d(new Translation2d(XPositions.get(0), YPositions.get(0)), new Rotation2d(Angles.get(0))), List.of(), new Pose2d(new Translation2d(XPositions.get(1), YPositions.get(1)), new Rotation2d(Angles.get(1))), TrajectoryConfig);
     //GetSecondObjectTrajectory = TrajectoryGenerator.generateTrajectory(new Pose2d(new Translation2d(XPositions.get(1), YPositions.get(1)), new Rotation2d(Angles.get(1))), List.of(new Translation2d(XPositions.get(2), YPositions.get(2))), new Pose2d(new Translation2d(XPositions.get(3), YPositions.get(3)), new Rotation2d(Angles.get(3))), TrajectoryConfig);

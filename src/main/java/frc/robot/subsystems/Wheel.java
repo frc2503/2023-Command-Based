@@ -209,11 +209,11 @@ public class Wheel extends SubsystemBase {
 
     // Tell the drive motor to drive the wheels at the correct speed
     DrivePIDController.setReference((((ModuleState.speedMetersPerSecond / ((4 / 39.37) * Math.PI)) * 60) / .15), ControlType.kVelocity);
-    System.out.println(((DriveEncoder.getVelocity() * ((4 / 39.37) * Math.PI)) / 60) * .15);
+    //System.out.println((DriveEncoder.getPosition() * .15) * ((4 / 39.37) * Math.PI));
   }
 
   public SwerveModulePosition getPosition() {
-    Position = new SwerveModulePosition(((DriveEncoder.getPosition() * ((4 / 39.37) * Math.PI)) / 60) * .15, new Rotation2d(SteerAngRad));
+    Position = new SwerveModulePosition(((-DriveEncoder.getPosition() * .15) * ((4 / 39.37) * Math.PI)), new Rotation2d(SteerAngRad));
     return Position;
   }
 }
