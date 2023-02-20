@@ -29,7 +29,7 @@ public class Wheel extends SubsystemBase {
   public TalonSRX Steer;
   public double SteerAngRot;
   public double SteerAngRad;
-  public double SteerFullRotations;
+  public double SteerFullRot;
   public Translation2d Location;
   public SwerveModuleState ModuleState;
   public double DiffToAng;
@@ -38,7 +38,7 @@ public class Wheel extends SubsystemBase {
   public double RampedWheelSpd;
   public int EncoderIsNegative;
   public boolean IsInput;
-  public SwerveModulePosition Position;
+  public SwerveModulePosition ModulePos;
 
   /**
 	 * Class constructor for the Wheel class, initializes all variables, objects, and methods for the created Wheel object
@@ -52,7 +52,7 @@ public class Wheel extends SubsystemBase {
     Location = new Translation2d(ModuleLocationX, ModuleLocationY);
     SteerAngRot = 0.0;
     SteerAngRad = 0.0;
-    SteerFullRotations = 0.0;
+    SteerFullRot = 0.0;
     DiffToAng = 0.0;
     AngSpdMod = 0.0;
     PrevRampedWheelSpd = 0.0;
@@ -128,10 +128,10 @@ public class Wheel extends SubsystemBase {
     SteerAngRot = (Steer.getSelectedSensorPosition() / EncoderPosMod);
 
     // Get the number of full rotations the wheel has gone through
-    SteerFullRotations = Math.floor(SteerAngRot);
+    SteerFullRot = Math.floor(SteerAngRot);
 
     // Invert the angle, so wpilib's math has a good input
-    SteerAngRad = ((2 * Math.PI) - ((2 * Math.PI) * (SteerAngRot - SteerFullRotations)));
+    SteerAngRad = ((2 * Math.PI) - ((2 * Math.PI) * (SteerAngRot - SteerFullRot)));
   }
 
   /**
@@ -184,7 +184,7 @@ public class Wheel extends SubsystemBase {
     }
 
     // Re-invert the angle, so the PID controller has a good input
-    ModuleState = new SwerveModuleState(ModuleState.speedMetersPerSecond, new Rotation2d(((2 * Math.PI) - ModuleState.angle.getRadians()) + (SteerFullRotations * (2 * Math.PI))));
+    ModuleState = new SwerveModuleState(ModuleState.speedMetersPerSecond, new Rotation2d(((2 * Math.PI) - ModuleState.angle.getRadians()) + (SteerFullRot * (2 * Math.PI))));
 
     // Check if any input is being sent, to prevent wheels from rotating to 0 when no input. 
     if (ModuleState.speedMetersPerSecond != 0) {
@@ -212,8 +212,8 @@ public class Wheel extends SubsystemBase {
     //System.out.println((DriveEncoder.getPosition() * .15) * ((4 / 39.37) * Math.PI));
   }
 
-  public SwerveModulePosition getPosition() {
-    Position = new SwerveModulePosition(((-DriveEncoder.getPosition() * .15) * ((4 / 39.37) * Math.PI)), new Rotation2d(SteerAngRad));
-    return Position;
+  public SwerveModulePosition getPosition(Integer DriveEncoderPosMod) {
+    ModulePos = new SwerveModulePosition((((DriveEncoder.getPosition() * DriveEncoderPosMod) * .15) * ((4 / 39.37) * Math.PI)), new Rotation2d(SteerAngRad));
+    return ModulePos;
   }
 }

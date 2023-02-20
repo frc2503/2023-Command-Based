@@ -4,15 +4,9 @@
 
 package frc.robot.subsystems;
 
-import java.nio.file.Path;
-import java.util.function.Supplier;
-
-import org.ejml.ops.ReadCsv;
-
 import edu.wpi.first.math.controller.HolonomicDriveController;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -20,12 +14,9 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator;
-import edu.wpi.first.math.trajectory.TrajectoryUtil;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.constraint.SwerveDriveKinematicsConstraint;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
-import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 
@@ -39,159 +30,184 @@ public class Autonomous extends SubsystemBase {
   public Tracking Tracking;
   private SwerveDrive Swerve;
   public String AutoFile;
-  private Path TrajectoryPath;
-  private File TrajectoryFile;
-  private TrajectoryConfig TrajectoryConfig;
-  private Trajectory PlaceFirstObjectTrajectory;
-  private Trajectory GetSecondObjectTrajectory;
-  private Trajectory PlaceSecondObjectTrajectory;
-  private Trajectory ToChargerTrajectory;
+  private File TrajFile;
+  private TrajectoryConfig TrajConfig;
+  private Trajectory Trajectory;
   private SwerveDriveKinematicsConstraint SwerveDriveMaxSpeed;
   private Constraints PIDConstraints;
   private Scanner AutoReader;
   private List<String> Lines;
   private List<String> CurrentLine;
-  private List<Double> XPositions;
-  private List<Double> YPositions;
-  private List<Double> Angles;
-  private Boolean HasChargerAuto = false;
-  private SwerveControllerCommand PlaceFirstObject;
-  private SwerveControllerCommand GetSecondObject;
-  private SwerveControllerCommand PlaceSecondObject;
-  private SwerveControllerCommand ToCharger;
+  private List<String> FileOrder;
+  private List<String> AutoOrder;
+  private List<Translation2d> Translation2ds;
+  private List<Rotation2d> Rotation2ds;
+  private List<Pose2d> Pose2ds;
+  private List<Translation2d> MiddlePoints;
+  private List<SwerveControllerCommand> SwerveControllerCommands;
   private Integer AutoStage;
+  private Integer StartIndex;
+  private Integer SwerveControllerCommandIndex;
   private Boolean IsScheduled = false;
+  private double MaxSwerveVel;
+  private double MaxSwerveAccel;
 
   public Autonomous(SwerveDrive SwerveDrive, Tracking Track) {
     Swerve = SwerveDrive;
     Tracking = Track;
     Lines = new ArrayList<String>();
     CurrentLine = new ArrayList<String>();
-    XPositions = new ArrayList<Double>();
-    YPositions = new ArrayList<Double>();
-    Angles = new ArrayList<Double>();
+    FileOrder = new ArrayList<String>();
+    AutoOrder = new ArrayList<String>();
+    Translation2ds = new ArrayList<Translation2d>();
+    Rotation2ds = new ArrayList<Rotation2d>();
+    MiddlePoints = new ArrayList<Translation2d>();
+    SwerveControllerCommands = new ArrayList<SwerveControllerCommand>();
     AutoStage = 0;
+    SwerveControllerCommandIndex = 0;
+    MaxSwerveVel = 1;
+    MaxSwerveAccel = 2;
   }
 
   public void initTrajectory() throws FileNotFoundException {
-    TrajectoryPath = Filesystem.getDeployDirectory().toPath().resolve("output/" + AutoFile);
-    System.out.println(TrajectoryPath.toString());
-    TrajectoryFile = TrajectoryPath.toFile();
-    AutoReader = new Scanner(TrajectoryFile);
-    SwerveDriveMaxSpeed = new SwerveDriveKinematicsConstraint(Swerve.Kinematics, 1);
-    PIDConstraints = new Constraints(1, 2);
-    TrajectoryConfig = new TrajectoryConfig(1, 1).setKinematics(Swerve.Kinematics).addConstraint(SwerveDriveMaxSpeed);
+    TrajFile = Filesystem.getDeployDirectory().toPath().resolve("output/paths/" + AutoFile).toFile();
+    AutoReader = new Scanner(TrajFile);
+    SwerveDriveMaxSpeed = new SwerveDriveKinematicsConstraint(Swerve.Kinematics, MaxSwerveVel);
+    PIDConstraints = new Constraints(MaxSwerveVel, MaxSwerveAccel);
+    TrajConfig = new TrajectoryConfig(MaxSwerveVel, MaxSwerveAccel).setKinematics(Swerve.Kinematics).addConstraint(SwerveDriveMaxSpeed);
     Lines.clear();
     CurrentLine.clear();
-    XPositions.clear();
-    YPositions.clear();
-    Angles.clear();
+    Translation2ds.clear();
+    Rotation2ds.clear();
+    SwerveControllerCommands.clear();
     AutoStage = 0;
     Swerve.Gyro.reset();
 
+    // Skip title line
     if (AutoReader.hasNextLine()) {
       AutoReader.nextLine();
     }
+    // Parse entire auto file, and place each seperate line into an entry in the Lines list
     while (AutoReader.hasNextLine()) {
       Lines.add(AutoReader.nextLine());
     }
+    AutoReader.close();
+    // Pull all data entry-by-entry from the Lines list and add that data to new lists
     for (Integer Index = 0; Index <= Lines.size() - 1; Index++) {
+      // Splits the next entry at each column, and adds that data to the CurrentLine list
       CurrentLine.addAll(Arrays.asList(Lines.get(Index).split(",")));
-      XPositions.add(Double.parseDouble(CurrentLine.get(0)));
-      YPositions.add(Double.parseDouble(CurrentLine.get(1)));
-      System.out.println(CurrentLine.get(1));
-      if (TrajectoryPath.toString().contains("Red")) {
-        Angles.add(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))) + Math.PI);
+      // Skips adding the first "Move" string to the FileOrder list
+      // This normalizes every series of "Move" entries to be 1 "Move" short of the actual number of points
+      // This also helps because any commands on the first point will need to be done before the first move
+      // So when we add the command here, it is before any "Move" entries
+      if (Index == 0) {
+        if (CurrentLine.get(6) != null) {
+          FileOrder.add(CurrentLine.get(6));
+          // Create a copy of the point in order to fix an indexing error that would otherwise occur later
+          Translation2ds.add(new Translation2d(Double.parseDouble(CurrentLine.get(0)),Double.parseDouble(CurrentLine.get(1))));
+          if (AutoFile.contains("Red")) {
+            Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))) + Math.PI));
+            Swerve.DriveEncoderPosMod = -1;
+          }
+          if (AutoFile.contains("Blue")) {
+            Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2)))));
+            Swerve.DriveEncoderPosMod = 1;
+          }
+          Pose2ds.add(new Pose2d(Translation2ds.get(Index), Rotation2ds.get(Index)));
+        }
       }
-      if (TrajectoryPath.toString().contains("Blue")) {
-        Angles.add(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))));
+      else {
+        FileOrder.add("Move");
+        // If there is a command at the point, add the command to the FileOrder list
+        // Also adds a copy of the current point to the lists
+        // This simplifies later code by having points for both the endpoint of this move and the beginning of the next
+        if (CurrentLine.get(6) != null) {
+          FileOrder.add(CurrentLine.get(6));
+          Translation2ds.add(new Translation2d(Double.parseDouble(CurrentLine.get(0)),Double.parseDouble(CurrentLine.get(1))));
+          if (AutoFile.contains("Red")) {
+            Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))) + Math.PI));
+            Swerve.DriveEncoderPosMod = -1;
+          }
+          if (AutoFile.contains("Blue")) {
+            Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2)))));
+            Swerve.DriveEncoderPosMod = 1;
+          }
+          Pose2ds.add(new Pose2d(Translation2ds.get(Index), Rotation2ds.get(Index)));
+        }
       }
-      if (Index == 6) {
-        HasChargerAuto = true;
+      
+      // Add the Translation2d of this point to the list
+      Translation2ds.add(new Translation2d(Double.parseDouble(CurrentLine.get(0)),Double.parseDouble(CurrentLine.get(1))));
+      // Check what alliance the auto is for, since Pathweaver doesn't take into account the alliance the robot is on
+      if (AutoFile.contains("Red")) {
+        // Add the Rotation2d of this point to the list, and invert it to solve the previously stated issue
+        Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))) + Math.PI));
+        // Inverts the output of the drive encoder in the getPosition() method for each wheel
+        // For some reason this also needs to happen to fix the previously stated issue
+        Swerve.DriveEncoderPosMod = -1;
       }
+      if (AutoFile.contains("Blue")) {
+        // Add the Rotation2d of this point to the list
+        Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2)))));
+        // Don't invert the output of the drive encoder in the getPosition() method for each wheel
+        Swerve.DriveEncoderPosMod = 1;
+      }
+      // Also add the Pose2d of this point to the list, for the endpoints
+      Pose2ds.add(new Pose2d(Translation2ds.get(Index), Rotation2ds.get(Index)));
       CurrentLine.clear();
     }
-    AutoReader.close();
-    Swerve.Odometry.resetPosition(new Rotation2d(Angles.get(0)), new SwerveModulePosition[] {Swerve.FrontRight.getPosition(), Swerve.FrontLeft.getPosition(), Swerve.BackLeft.getPosition(), Swerve.BackRight.getPosition()}, new Pose2d(new Translation2d(XPositions.get(0), YPositions.get(0)), new Rotation2d(0)));
+    // Set the position of the odometry to the starting position of the auto
+    Swerve.Odometry.resetPosition(Swerve.Gyro.getRotation2d().unaryMinus(), new SwerveModulePosition[] {Swerve.FrontRight.getPosition(Swerve.DriveEncoderPosMod), Swerve.FrontLeft.getPosition(Swerve.DriveEncoderPosMod), Swerve.BackLeft.getPosition(Swerve.DriveEncoderPosMod), Swerve.BackRight.getPosition(Swerve.DriveEncoderPosMod)}, Pose2ds.get(0));
 
-    PlaceFirstObjectTrajectory = TrajectoryGenerator.generateTrajectory(new Pose2d(new Translation2d(XPositions.get(0), YPositions.get(0)), new Rotation2d(Angles.get(0))), List.of(), new Pose2d(new Translation2d(XPositions.get(1), YPositions.get(1)), new Rotation2d(Angles.get(1))), TrajectoryConfig);
-    //GetSecondObjectTrajectory = TrajectoryGenerator.generateTrajectory(new Pose2d(new Translation2d(XPositions.get(1), YPositions.get(1)), new Rotation2d(Angles.get(1))), List.of(new Translation2d(XPositions.get(2), YPositions.get(2))), new Pose2d(new Translation2d(XPositions.get(3), YPositions.get(3)), new Rotation2d(Angles.get(3))), TrajectoryConfig);
-    //PlaceSecondObjectTrajectory = TrajectoryGenerator.generateTrajectory(new Pose2d(new Translation2d(XPositions.get(3), YPositions.get(3)), new Rotation2d(Angles.get(3))), List.of(new Translation2d(XPositions.get(4), YPositions.get(4))), new Pose2d(new Translation2d(XPositions.get(5), YPositions.get(5)), new Rotation2d(Angles.get(5))), TrajectoryConfig);
-    //ToChargerTrajectory = TrajectoryGenerator.generateTrajectory(new Pose2d(new Translation2d(XPositions.get(5), YPositions.get(5)), new Rotation2d(Angles.get(5))), List.of(), new Pose2d(new Translation2d(XPositions.get(6), YPositions.get(6)), new Rotation2d(Angles.get(6))), TrajectoryConfig);
-
-    PlaceFirstObject = new SwerveControllerCommand(PlaceFirstObjectTrajectory, Swerve::getPose, Swerve.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), Swerve::setModuleStates, Swerve);
-    //GetSecondObject = new SwerveControllerCommand(GetSecondObjectTrajectory, Swerve::getPose, Swerve.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), Swerve::setModuleStates, Swerve);
-    //PlaceSecondObject = new SwerveControllerCommand(PlaceSecondObjectTrajectory, Swerve::getPose, Swerve.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), Swerve::setModuleStates, Swerve);
-    //ToCharger = new SwerveControllerCommand(ToChargerTrajectory, Swerve::getPose, Swerve.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), Swerve::setModuleStates, Swerve);
+    // Create all required SwerveControllerCommands, as well as a roadmap for what to do at each step of auto
+    for (Integer Index = 0; Index <= FileOrder.size() - 1; Index++) {
+      // If the next command is to move, create a SwerveControllerCommand for every point up to the next non-move command
+      if (FileOrder.get(Index) == "Move") {
+        // Store the starting index, since this is the beginning point of the move, then increment the index
+        StartIndex = Index++;
+        // Create the list of midpoints
+        for (String ListString = "Move"; ListString == "Move"; ListString = FileOrder.get(Index++)) {
+          MiddlePoints.add(Translation2ds.get(Index));
+        }
+        // Generate the trajectory, using the StartIndex for the starting position, the MiddlePoints list we just created, and the current index as the endpoint
+        Trajectory = TrajectoryGenerator.generateTrajectory(Pose2ds.get(StartIndex), MiddlePoints, Pose2ds.get(Index), TrajConfig);
+        // Generate the SwerveControllerCommand, and put it in the SwerveControllerCommandslist
+        SwerveControllerCommands.add(new SwerveControllerCommand(Trajectory, Swerve::getPose, Swerve.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), Swerve::setModuleStates, Swerve));
+        // Decrement the index in preparation for the for loop to increment it
+        Index--;
+        MiddlePoints.clear();
+      }
+      // Add the command to the AutoOrder list, which will act as a roadmap for Auto
+      AutoOrder.add(FileOrder.get(Index));
+    }
   }
 
   public void runAutonomous() {
-    if (AutoStage == 0) {
+    if (AutoOrder.get(AutoStage) == "Move") {
       if (!IsScheduled) {
-        PlaceFirstObject.andThen(() -> Swerve.stop()).schedule();
+        SwerveControllerCommands.get(SwerveControllerCommandIndex).andThen(() -> Swerve.stop()).schedule();
         IsScheduled = true;
       }
-      if (PlaceFirstObject.isFinished()) {
-        AutoStage = 1;
+      if (SwerveControllerCommands.get(SwerveControllerCommandIndex).isFinished()) {
+        AutoStage++;
+        SwerveControllerCommandIndex++;
         IsScheduled = false;
       }
     }
-    /**
-    if (AutoStage == 1) {
-      //Extend arm
-      //Line up with Limelight
-      //Drop object
-      //Retract arm
-      AutoStage = 2;
+    if (AutoOrder.get(AutoStage) == "Grab Cone") {
+      AutoStage++;
     }
-    if (AutoStage == 2) {
-      if (!IsScheduled) {
-        GetSecondObject.andThen(() -> Swerve.stop()).schedule();
-        IsScheduled = true;
-      }
-      if (GetSecondObject.isFinished()) {
-        AutoStage = 3;
-        IsScheduled = false;
-      }
+    if (AutoOrder.get(AutoStage) == "Grab Cube") {
+      AutoStage++;
     }
-    if (AutoStage == 3) {
-      //Extend intake
-      //Start motors
-      //Pick up with Limelight
-      //Stop motors
-      //Retract intake
-      AutoStage = 4;
+    if (AutoOrder.get(AutoStage) == "Place Cone") {
+      AutoStage++;
     }
-    if (AutoStage == 4) {
-      if (!IsScheduled) {
-        PlaceSecondObject.andThen(() -> Swerve.stop()).schedule();
-        IsScheduled = true;
-      }
-      if (PlaceSecondObject.isFinished()) {
-        AutoStage = 5;
-        IsScheduled = false;
-      }
+    if (AutoOrder.get(AutoStage) == "Place Cube") {
+      AutoStage++;
     }
-    if (AutoStage == 5) {
-      //Extend arm
-      //Line up with Limelight
-      //Drop object
-      //Retract arm
-      AutoStage = 6;
+    if (AutoOrder.get(AutoStage) == "Charge") {
+      AutoStage++;
     }
-    if (AutoStage == 6 & HasChargerAuto) {
-      if (!IsScheduled) {
-        ToCharger.andThen(() -> Swerve.stop()).schedule();
-        IsScheduled = true;
-      }
-      if (ToCharger.isFinished()) {
-        AutoStage = 7;
-        IsScheduled = false;
-      }
-    }
-    if (AutoStage == 7) {
-      //Auto balance on charger
-    }
-    */
   }
 }

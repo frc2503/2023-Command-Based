@@ -35,10 +35,10 @@ public class Robot extends TimedRobot {
   // Define objects and variables
   private Joystick LeftStick;
   private Joystick RightStick;
-  private Double RightStickX;
-  private Double RightStickY;
-  private Double RightStickTwist;
-  private Double[] MotorCurrents;
+  private double RightStickX;
+  private double RightStickY;
+  private double RightStickTwist;
+  private double[] MotorCurrents;
   private String[] AutoNames;
   private String PrevAuto;
 
@@ -67,7 +67,6 @@ public class Robot extends TimedRobot {
     for (Integer Index = 0; Index <= AutoNames.length - 1; Index++) {
       AutoChooser.addOption(AutoNames[Index], AutoNames[Index]);
     }
-    // hehe funne number
     SmartDashboard.putData("AutoChooser", AutoChooser);
     
     // Assign joysticks to the "LeftStick" and "RightStick" objects
@@ -116,6 +115,10 @@ public class Robot extends TimedRobot {
     }
   }
  
+  @Override
+  public void teleopInit() {
+    SwerveDrive.DriveEncoderPosMod = 1;
+  }
 
   @Override
   public void teleopPeriodic() {
@@ -147,7 +150,7 @@ public class Robot extends TimedRobot {
 
     SmartDashboard.putNumber("Gyro", SwerveDrive.GyroRotation2d.unaryMinus().getDegrees());
 
-    MotorCurrents = new Double[] {SwerveDrive.FrontLeft.Drive.getOutputCurrent(), SwerveDrive.FrontRight.Drive.getOutputCurrent(), SwerveDrive.BackLeft.Drive.getOutputCurrent(), SwerveDrive.BackRight.Drive.getOutputCurrent()};
+    MotorCurrents = new double[] {SwerveDrive.FrontLeft.Drive.getOutputCurrent(), SwerveDrive.FrontRight.Drive.getOutputCurrent(), SwerveDrive.BackLeft.Drive.getOutputCurrent(), SwerveDrive.BackRight.Drive.getOutputCurrent()};
     SmartDashboard.putNumberArray("RobotDrive Motors", MotorCurrents);
   
     if (RightStick.getRawButton(2) == true) {
@@ -173,7 +176,6 @@ public class Robot extends TimedRobot {
   //Autonomous right away
   @Override
   public void autonomousInit(){
-    System.out.println("Start Y: " + SwerveDrive.Odometry.getPoseMeters().getY());
   }
 
   //Autonomous repeat
