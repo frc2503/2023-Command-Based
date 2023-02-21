@@ -19,10 +19,14 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 import java.io.FileNotFoundException;
 
+import javax.lang.model.util.ElementScanner14;
+
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import com.revrobotics.SparkMaxRelativeEncoder;
 import edu.wpi.first.networktables.*;
 import edu.wpi.first.util.sendable.SendableBuilder;
 import frc.robot.subsystems.Autonomous;
@@ -50,13 +54,22 @@ public class Robot extends TimedRobot {
   public NetworkTable DriverStation;
   public NetworkTableEntry GyroAng;
   public SendableChooser<String> AutoChooser;
+  private ShuffleboardTab LiveWindow;
+  private SimpleWidget FFGain;
+  private SimpleWidget PGain;
+  private SimpleWidget IGain;
+  private SimpleWidget DGain;
 
   private CANSparkMax Intake;
-  private CANSparkMax Indexer;
-  private SparkMaxPIDController IntakePID;
+  private CANSparkMax ArmAngle;
+  private SparkMaxPIDController ArmAnglePIDController;
+  private CANSparkMax ArmExtend;
+  private SparkMaxPIDController ArmExtendPIDController;
 
   private Compressor Pump;
-  private DoubleSolenoid Intake1;
+  private DoubleSolenoid IntakeExtend;
+  private DoubleSolenoid Grabber;
+
 
   @Override
   public void robotInit() {
@@ -68,17 +81,33 @@ public class Robot extends TimedRobot {
       AutoChooser.addOption(AutoNames[Index], AutoNames[Index]);
     }
     SmartDashboard.putData("AutoChooser", AutoChooser);
+
+    LiveWindow = Shuffleboard.getTab("LiveWindow");
+    FFGain = LiveWindow.add("FFGain", 0.000175);
+    PGain = LiveWindow.add("PGain", 0.0000007);
+    IGain = LiveWindow.add("IGain", 0.0000004);
+    DGain = LiveWindow.add("DGain", 0.0);
     
     // Assign joysticks to the "LeftStick" and "RightStick" objects
     LeftStick = new Joystick(0);
     RightStick = new Joystick(1);
 
-    Intake = new CANSparkMax(9, MotorType.kBrushed);
-    Indexer = new CANSparkMax(11, MotorType.kBrushless);
+    Intake = new CANSparkMax(9, MotorType.kBrushless);
+    ArmAngle = new CANSparkMax(10, MotorType.kBrushless);
+    ArmAnglePIDController = ArmAngle.getPIDController();
+    ArmExtend = new CANSparkMax(11, MotorType.kBrushless);
+    ArmExtendPIDController = ArmExtend.getPIDController();
+
+    ArmAnglePIDController.setFeedbackDevice(ArmAngle.getEncoder(SparkMaxRelativeEncoder.Type.kHallSensor, 42));
+    ArmAnglePIDController.setOutputRange(-1, 1);
+    ArmExtendPIDController.setFeedbackDevice(ArmExtend.getEncoder(SparkMaxRelativeEncoder.Type.kHallSensor, 42));
+    ArmExtendPIDController.setOutputRange(-1, 1);
 
     Pump = new Compressor(0, PneumaticsModuleType.CTREPCM);
-    Intake1 = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1);
-    Intake1.set(Value.kReverse);
+    IntakeExtend = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1);
+    IntakeExtend.set(Value.kReverse);
+    Grabber = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 2, 3);
+    Grabber.set(Value.kForward);
 
     // Instantiate an object for each class
     SwerveDrive = new SwerveDrive();
@@ -87,7 +116,7 @@ public class Robot extends TimedRobot {
 
     // Call SwerveDrive methods, their descriptions are in the SwerveDrive.java file
     SwerveDrive.initMotorControllers(1, 5, 2, 6, 3, 7, 4, 8);
-    SwerveDrive.setPID(0.000175, 0.0000007, 0.0000001, 0.0, 8.0, 0.01, 0.01);
+    SwerveDrive.setPID(0.000175, 0.0000007, 0.0000004, 0.0, 8.0, 0.01, 0.01);
     SwerveDrive.initKinematicsAndOdometry();
     PrevAuto = AutoChooser.getSelected();
     Autonomous.AutoFile = AutoChooser.getSelected();
@@ -113,6 +142,10 @@ public class Robot extends TimedRobot {
       }
       PrevAuto = AutoChooser.getSelected();
     }
+    ArmAnglePIDController.setFF(FFGain.getEntry().getDouble(0));
+    ArmAnglePIDController.setP(PGain.getEntry().getDouble(0));
+    ArmAnglePIDController.setI(IGain.getEntry().getDouble(0));
+    ArmAnglePIDController.setD(DGain.getEntry().getDouble(0));
   }
  
   @Override
@@ -138,8 +171,8 @@ public class Robot extends TimedRobot {
       RightStickTwist = 0.0;
     }
 
-    if (RightStick.getRawButton(6)) {
-      Tracking.centerOnCone();
+    if (LeftStick.getRawButton(2)) {
+      Tracking.centerOnPole();
     }
     else {
       // Call swerveDrive() method, to do all the math and outputs for swerve drive
@@ -156,21 +189,44 @@ public class Robot extends TimedRobot {
     if (RightStick.getRawButton(2) == true) {
       SwerveDrive.Gyro.reset();
     }
-    if (RightStick.getRawButton(3)) {
+    if (RightStick.getRawButtonPressed(3)) {
+      IntakeExtend.toggle();
+    }
+    if (RightStick.getRawButton(1)) {
+      Intake.set(-1);
+    }
+    else if (RightStick.getRawButton(5)) {
       Intake.set(1);
     }
     else {
       Intake.set(0);
     }
-    if (RightStick.getRawButton(5)) {
-      Indexer.set(.15);
+    if (LeftStick.getRawButton(4)) {
+      ArmAngle.set(-.2);
+      //ArmAnglePIDController.setReference(0, ControlType.kPosition);
+    }
+    else if (LeftStick.getRawButton(6)) {
+      ArmAngle.set(.1);
+      //ArmAnglePIDController.setReference(-1, ControlType.kPosition);
     }
     else {
-      Indexer.set(0);
+      ArmAngle.set(0);
     }
-    if (RightStick.getRawButtonPressed(4)) {
-      Intake1.toggle();
+    if (LeftStick.getRawButton(3)) {
+      ArmExtend.set(.2);
+      //ArmExtendPIDController.setReference(0, ControlType.kPosition);
     }
+    else if (LeftStick.getRawButton(5)) {
+      ArmExtend.set(-.2);
+      //ArmExtendPIDController.setReference(1), ControlType.kPosition);
+    }
+    else {
+      ArmExtend.set(0);
+    }
+    if (LeftStick.getRawButtonPressed(1)) {
+      Grabber.toggle();
+    }
+    System.out.println((ArmAngle.getEncoder().getPosition()/48)*360);
   }
 
   //Autonomous right away

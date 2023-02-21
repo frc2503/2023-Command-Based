@@ -53,7 +53,7 @@ public class Tracking extends SubsystemBase {
   }
 
   public void centerOnPole() {
-    Swerve.swerveDrive(PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
+    Swerve.swerveDrive(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
     Swerve.setVariablesAndOptimize();
     Swerve.setSwerveOutputs();
   }
