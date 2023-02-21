@@ -33,7 +33,6 @@ public class SwerveDrive extends SubsystemBase {
 
   public double EncoderPosMod;
   private double DriveRampValue;
-  public Integer DriveEncoderPosMod;
 
   private ChassisSpeeds Speeds;
   private SwerveModuleState[] ModuleStates;
@@ -72,7 +71,7 @@ public class SwerveDrive extends SubsystemBase {
   }
 
   public void initKinematicsAndOdometry() {
-    ModulePositions = new SwerveModulePosition[] {FrontRight.getPosition(DriveEncoderPosMod), FrontLeft.getPosition(DriveEncoderPosMod), BackLeft.getPosition(DriveEncoderPosMod), BackRight.getPosition(DriveEncoderPosMod)};
+    ModulePositions = new SwerveModulePosition[] {FrontRight.getPosition(), FrontLeft.getPosition(), BackLeft.getPosition(), BackRight.getPosition()};
     
     // Pass in locations of wheels relative to the center of the robot
     // These are later used in the backend, likely to find the angles the wheels need to rotate to when the robot spins 
@@ -198,7 +197,7 @@ public class SwerveDrive extends SubsystemBase {
   public void setSwerveOutputs() {
     // Update Odometry, so the robot knows its position on the field
     // This section currently only exists so we can use odometry, which solves many other issues, however it will likely be useful for autonomous movement.
-    ModulePositions = new SwerveModulePosition[] {FrontRight.getPosition(DriveEncoderPosMod), FrontLeft.getPosition(DriveEncoderPosMod), BackLeft.getPosition(DriveEncoderPosMod), BackRight.getPosition(DriveEncoderPosMod)};
+    ModulePositions = new SwerveModulePosition[] {FrontRight.getPosition(), FrontLeft.getPosition(), BackLeft.getPosition(), BackRight.getPosition()};
     Odometry.update(GyroRotation2d.unaryMinus(), ModulePositions);
 
     FrontRight.setOutputs(EncoderPosMod);
@@ -241,6 +240,8 @@ public class SwerveDrive extends SubsystemBase {
   }
 
   public void stop() {
+    System.out.println("End X:" + Odometry.getPoseMeters().getX());
+    System.out.println("End Y:" + Odometry.getPoseMeters().getY());
     swerveDrive(0.0, 0.0, 0.0, 1.0, 1.0);
     setVariablesAndOptimize();
     setSwerveOutputs();

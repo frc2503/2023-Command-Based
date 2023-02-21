@@ -24,6 +24,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+
+import javax.swing.plaf.synth.SynthScrollBarUI;
+
 import java.io.*;
 
 public class Autonomous extends SubsystemBase {
@@ -61,6 +64,7 @@ public class Autonomous extends SubsystemBase {
     AutoOrder = new ArrayList<String>();
     Translation2ds = new ArrayList<Translation2d>();
     Rotation2ds = new ArrayList<Rotation2d>();
+    Pose2ds = new ArrayList<Pose2d>();
     MiddlePoints = new ArrayList<Translation2d>();
     SwerveControllerCommands = new ArrayList<SwerveControllerCommand>();
     AutoStage = 0;
@@ -79,7 +83,10 @@ public class Autonomous extends SubsystemBase {
     CurrentLine.clear();
     Translation2ds.clear();
     Rotation2ds.clear();
+    Pose2ds.clear();
     SwerveControllerCommands.clear();
+    FileOrder.clear();
+    AutoOrder.clear();
     AutoStage = 0;
     Swerve.Gyro.reset();
 
@@ -101,17 +108,15 @@ public class Autonomous extends SubsystemBase {
       // This also helps because any commands on the first point will need to be done before the first move
       // So when we add the command here, it is before any "Move" entries
       if (Index == 0) {
-        if (CurrentLine.get(6) != null) {
+        if (CurrentLine.size() == 7) {
           FileOrder.add(CurrentLine.get(6));
           // Create a copy of the point in order to fix an indexing error that would otherwise occur later
           Translation2ds.add(new Translation2d(Double.parseDouble(CurrentLine.get(0)),Double.parseDouble(CurrentLine.get(1))));
           if (AutoFile.contains("Red")) {
             Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))) + Math.PI));
-            Swerve.DriveEncoderPosMod = -1;
           }
           if (AutoFile.contains("Blue")) {
             Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2)))));
-            Swerve.DriveEncoderPosMod = 1;
           }
           Pose2ds.add(new Pose2d(Translation2ds.get(Index), Rotation2ds.get(Index)));
         }
@@ -121,16 +126,14 @@ public class Autonomous extends SubsystemBase {
         // If there is a command at the point, add the command to the FileOrder list
         // Also adds a copy of the current point to the lists
         // This simplifies later code by having points for both the endpoint of this move and the beginning of the next
-        if (CurrentLine.get(6) != null) {
+        if (CurrentLine.size() == 7) {
           FileOrder.add(CurrentLine.get(6));
           Translation2ds.add(new Translation2d(Double.parseDouble(CurrentLine.get(0)),Double.parseDouble(CurrentLine.get(1))));
           if (AutoFile.contains("Red")) {
             Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))) + Math.PI));
-            Swerve.DriveEncoderPosMod = -1;
           }
           if (AutoFile.contains("Blue")) {
             Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2)))));
-            Swerve.DriveEncoderPosMod = 1;
           }
           Pose2ds.add(new Pose2d(Translation2ds.get(Index), Rotation2ds.get(Index)));
         }
@@ -142,22 +145,19 @@ public class Autonomous extends SubsystemBase {
       if (AutoFile.contains("Red")) {
         // Add the Rotation2d of this point to the list, and invert it to solve the previously stated issue
         Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))) + Math.PI));
-        // Inverts the output of the drive encoder in the getPosition() method for each wheel
-        // For some reason this also needs to happen to fix the previously stated issue
-        Swerve.DriveEncoderPosMod = -1;
       }
       if (AutoFile.contains("Blue")) {
         // Add the Rotation2d of this point to the list
         Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2)))));
-        // Don't invert the output of the drive encoder in the getPosition() method for each wheel
-        Swerve.DriveEncoderPosMod = 1;
       }
       // Also add the Pose2d of this point to the list, for the endpoints
       Pose2ds.add(new Pose2d(Translation2ds.get(Index), Rotation2ds.get(Index)));
       CurrentLine.clear();
     }
     // Set the position of the odometry to the starting position of the auto
-    Swerve.Odometry.resetPosition(Swerve.Gyro.getRotation2d().unaryMinus(), new SwerveModulePosition[] {Swerve.FrontRight.getPosition(Swerve.DriveEncoderPosMod), Swerve.FrontLeft.getPosition(Swerve.DriveEncoderPosMod), Swerve.BackLeft.getPosition(Swerve.DriveEncoderPosMod), Swerve.BackRight.getPosition(Swerve.DriveEncoderPosMod)}, Pose2ds.get(0));
+    Swerve.Odometry.resetPosition(Swerve.Gyro.getRotation2d().unaryMinus(), new SwerveModulePosition[] {Swerve.FrontRight.getPosition(), Swerve.FrontLeft.getPosition(), Swerve.BackLeft.getPosition(), Swerve.BackRight.getPosition()}, Pose2ds.get(0));
+
+    System.out.println(FileOrder);
 
     // Create all required SwerveControllerCommands, as well as a roadmap for what to do at each step of auto
     for (Integer Index = 0; Index <= FileOrder.size() - 1; Index++) {
@@ -166,8 +166,12 @@ public class Autonomous extends SubsystemBase {
         // Store the starting index, since this is the beginning point of the move, then increment the index
         StartIndex = Index++;
         // Create the list of midpoints
-        for (String ListString = "Move"; ListString == "Move"; ListString = FileOrder.get(Index++)) {
-          MiddlePoints.add(Translation2ds.get(Index));
+        System.out.println(Index);
+        System.out.println(FileOrder.size() - 2);
+        if (Index <= FileOrder.size() - 2) {
+          while (Index <= FileOrder.size() - 2 & FileOrder.get(Index) == "Move") {
+            MiddlePoints.add(Translation2ds.get(Index++));
+          }
         }
         // Generate the trajectory, using the StartIndex for the starting position, the MiddlePoints list we just created, and the current index as the endpoint
         Trajectory = TrajectoryGenerator.generateTrajectory(Pose2ds.get(StartIndex), MiddlePoints, Pose2ds.get(Index), TrajConfig);
@@ -180,34 +184,54 @@ public class Autonomous extends SubsystemBase {
       // Add the command to the AutoOrder list, which will act as a roadmap for Auto
       AutoOrder.add(FileOrder.get(Index));
     }
+    System.out.println("Start X:" + Translation2ds.get(0).getX());
+    System.out.println("Start Y:" + Translation2ds.get(0).getY());
   }
 
   public void runAutonomous() {
-    if (AutoOrder.get(AutoStage) == "Move") {
-      if (!IsScheduled) {
-        SwerveControllerCommands.get(SwerveControllerCommandIndex).andThen(() -> Swerve.stop()).schedule();
-        IsScheduled = true;
+    if (AutoStage <= AutoOrder.size() - 1) {
+      if (AutoOrder.get(AutoStage) == "Move") {
+        if (!IsScheduled) {
+          System.out.println("Move");
+          SwerveControllerCommands.get(SwerveControllerCommandIndex).andThen(() -> Swerve.stop()).schedule();
+          IsScheduled = true;
+        }
+        if (SwerveControllerCommands.get(SwerveControllerCommandIndex).isFinished()) {
+          AutoStage++;
+          SwerveControllerCommandIndex++;
+          IsScheduled = false;
+        }
       }
-      if (SwerveControllerCommands.get(SwerveControllerCommandIndex).isFinished()) {
+    }
+    if (AutoStage <= AutoOrder.size() - 1) {
+      if (AutoOrder.get(AutoStage) == "Grab Cone") {
+        System.out.println("Grab Cone");
         AutoStage++;
-        SwerveControllerCommandIndex++;
-        IsScheduled = false;
       }
     }
-    if (AutoOrder.get(AutoStage) == "Grab Cone") {
-      AutoStage++;
+    if (AutoStage <= AutoOrder.size() - 1) {
+      if (AutoOrder.get(AutoStage) == "Grab Cube") {
+        System.out.println("Grab Cube");
+        AutoStage++;
+      }
     }
-    if (AutoOrder.get(AutoStage) == "Grab Cube") {
-      AutoStage++;
+    if (AutoStage <= AutoOrder.size() - 1) {
+      if (AutoOrder.get(AutoStage) == "Place Cone") {
+        System.out.println("Place Cone");
+        AutoStage++;
+      }
     }
-    if (AutoOrder.get(AutoStage) == "Place Cone") {
-      AutoStage++;
+    if (AutoStage <= AutoOrder.size() - 1) {
+      if (AutoOrder.get(AutoStage) == "Place Cube") {
+        System.out.println("Place Cube");
+        AutoStage++;
+      }
     }
-    if (AutoOrder.get(AutoStage) == "Place Cube") {
-      AutoStage++;
-    }
-    if (AutoOrder.get(AutoStage) == "Charge") {
-      AutoStage++;
+    if (AutoStage <= AutoOrder.size() - 1) {
+      if (AutoOrder.get(AutoStage) == "Charge") {
+        System.out.println("Charge");
+        AutoStage++;
+      }
     }
   }
 }

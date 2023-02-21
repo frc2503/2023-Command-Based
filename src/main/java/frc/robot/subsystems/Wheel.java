@@ -211,8 +211,8 @@ public class Wheel extends SubsystemBase {
     DrivePIDController.setReference((((ModuleState.speedMetersPerSecond / ((4 / 39.37) * Math.PI)) * 60) / .15), ControlType.kVelocity);
   }
 
-  public SwerveModulePosition getPosition(Integer DriveEncoderPosMod) {
-    ModulePos = new SwerveModulePosition((((DriveEncoder.getPosition() * DriveEncoderPosMod) * .15) * ((4 / 39.37) * Math.PI)), new Rotation2d(SteerAngRad));
+  public SwerveModulePosition getPosition() {
+    ModulePos = new SwerveModulePosition((((DriveEncoder.getPosition()) * .15) * ((4 / 39.37) * Math.PI)), new Rotation2d(SteerAngRad).unaryMinus());
     return ModulePos;
   }
 }

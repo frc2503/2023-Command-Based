@@ -80,6 +80,7 @@ public class Robot extends TimedRobot {
     for (Integer Index = 0; Index <= AutoNames.length - 1; Index++) {
       AutoChooser.addOption(AutoNames[Index], AutoNames[Index]);
     }
+    AutoChooser.setDefaultOption("BlueTest", "BlueTest");
     SmartDashboard.putData("AutoChooser", AutoChooser);
 
     LiveWindow = Shuffleboard.getTab("LiveWindow");
@@ -121,6 +122,7 @@ public class Robot extends TimedRobot {
     PrevAuto = AutoChooser.getSelected();
     Autonomous.AutoFile = AutoChooser.getSelected();
     if (AutoChooser.getSelected() != null) {
+      System.out.println(Autonomous.AutoFile);
     try {
         Autonomous.initTrajectory();
       } catch (FileNotFoundException e) {
@@ -135,6 +137,7 @@ public class Robot extends TimedRobot {
     CommandScheduler.getInstance().run();
     if (PrevAuto != AutoChooser.getSelected()) {
       Autonomous.AutoFile = AutoChooser.getSelected();
+      System.out.println(Autonomous.AutoFile);
       try {
         Autonomous.initTrajectory();
       } catch (FileNotFoundException e) {
@@ -150,7 +153,6 @@ public class Robot extends TimedRobot {
  
   @Override
   public void teleopInit() {
-    SwerveDrive.DriveEncoderPosMod = 1;
   }
 
   @Override
@@ -226,7 +228,7 @@ public class Robot extends TimedRobot {
     if (LeftStick.getRawButtonPressed(1)) {
       Grabber.toggle();
     }
-    System.out.println((ArmAngle.getEncoder().getPosition()/48)*360);
+    //System.out.println((ArmAngle.getEncoder().getPosition()/48)*360);
   }
 
   //Autonomous right away
