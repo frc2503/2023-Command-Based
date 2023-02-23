@@ -155,7 +155,7 @@ public class Autonomous extends SubsystemBase {
       CurrentLine.clear();
     }
     // Set the position of the odometry to the starting position of the auto
-    Swerve.Odometry.resetPosition(Swerve.Gyro.getRotation2d().unaryMinus(), new SwerveModulePosition[] {Swerve.FrontRight.getPosition(), Swerve.FrontLeft.getPosition(), Swerve.BackLeft.getPosition(), Swerve.BackRight.getPosition()}, Pose2ds.get(0));
+    Swerve.Odometry.resetPosition(Swerve.GyroRotation2d, new SwerveModulePosition[] {Swerve.FrontRight.getPosition(), Swerve.FrontLeft.getPosition(), Swerve.BackLeft.getPosition(), Swerve.BackRight.getPosition()}, Pose2ds.get(0));
 
     System.out.println(FileOrder);
 

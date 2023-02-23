@@ -60,14 +60,12 @@ public class Robot extends TimedRobot {
   private SimpleWidget IGain;
   private SimpleWidget DGain;
 
-  private CANSparkMax Intake;
   private CANSparkMax ArmAngle;
   private SparkMaxPIDController ArmAnglePIDController;
   private CANSparkMax ArmExtend;
   private SparkMaxPIDController ArmExtendPIDController;
 
   private Compressor Pump;
-  private DoubleSolenoid IntakeExtend;
   private DoubleSolenoid Grabber;
 
 
@@ -84,16 +82,16 @@ public class Robot extends TimedRobot {
     SmartDashboard.putData("AutoChooser", AutoChooser);
 
     LiveWindow = Shuffleboard.getTab("LiveWindow");
-    FFGain = LiveWindow.add("FFGain", 0.000175);
-    PGain = LiveWindow.add("PGain", 0.0000007);
-    IGain = LiveWindow.add("IGain", 0.0000004);
+    /**
+    FFGain = LiveWindow.add("FFGain", 0.0);
+    PGain = LiveWindow.add("PGain", 0.02);
+    IGain = LiveWindow.add("IGain", 0.0);
     DGain = LiveWindow.add("DGain", 0.0);
-    
+    */
     // Assign joysticks to the "LeftStick" and "RightStick" objects
     LeftStick = new Joystick(0);
     RightStick = new Joystick(1);
 
-    Intake = new CANSparkMax(9, MotorType.kBrushless);
     ArmAngle = new CANSparkMax(10, MotorType.kBrushless);
     ArmAnglePIDController = ArmAngle.getPIDController();
     ArmExtend = new CANSparkMax(11, MotorType.kBrushless);
@@ -101,12 +99,18 @@ public class Robot extends TimedRobot {
 
     ArmAnglePIDController.setFeedbackDevice(ArmAngle.getEncoder(SparkMaxRelativeEncoder.Type.kHallSensor, 42));
     ArmAnglePIDController.setOutputRange(-1, 1);
+    ArmAnglePIDController.setFF(0);
+    ArmAnglePIDController.setP(.05);
+    ArmAnglePIDController.setI(0);
+    ArmAnglePIDController.setD(0);
     ArmExtendPIDController.setFeedbackDevice(ArmExtend.getEncoder(SparkMaxRelativeEncoder.Type.kHallSensor, 42));
     ArmExtendPIDController.setOutputRange(-1, 1);
+    ArmAnglePIDController.setFF(0);
+    ArmAnglePIDController.setP(.06);
+    ArmAnglePIDController.setI(0);
+    ArmAnglePIDController.setD(0);
 
     Pump = new Compressor(0, PneumaticsModuleType.CTREPCM);
-    IntakeExtend = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1);
-    IntakeExtend.set(Value.kReverse);
     Grabber = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 2, 3);
     Grabber.set(Value.kForward);
 
@@ -115,9 +119,11 @@ public class Robot extends TimedRobot {
     Tracking = new Tracking(SwerveDrive);
     Autonomous = new Autonomous(SwerveDrive, Tracking);
 
+    SwerveDrive.GyroRotation2d = SwerveDrive.Gyro.getRotation2d();
+
     // Call SwerveDrive methods, their descriptions are in the SwerveDrive.java file
     SwerveDrive.initMotorControllers(1, 5, 2, 6, 3, 7, 4, 8);
-    SwerveDrive.setPID(0.000175, 0.0000007, 0.0000004, 0.0, 8.0, 0.01, 0.01);
+    SwerveDrive.setPID(0.000175, 0.000001, 0.0000004, 0.0, 8.0, 0.01, 0.01);
     SwerveDrive.initKinematicsAndOdometry();
     PrevAuto = AutoChooser.getSelected();
     Autonomous.AutoFile = AutoChooser.getSelected();
@@ -145,10 +151,12 @@ public class Robot extends TimedRobot {
       }
       PrevAuto = AutoChooser.getSelected();
     }
-    ArmAnglePIDController.setFF(FFGain.getEntry().getDouble(0));
-    ArmAnglePIDController.setP(PGain.getEntry().getDouble(0));
-    ArmAnglePIDController.setI(IGain.getEntry().getDouble(0));
-    ArmAnglePIDController.setD(DGain.getEntry().getDouble(0));
+    /**
+    ArmExtendPIDController.setFF(FFGain.getEntry().getDouble(0));
+    ArmExtendPIDController.setP(PGain.getEntry().getDouble(0));
+    ArmExtendPIDController.setI(IGain.getEntry().getDouble(0));
+    ArmExtendPIDController.setD(DGain.getEntry().getDouble(0));
+    */
   }
  
   @Override
@@ -157,6 +165,10 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
+    SwerveDrive.GyroRotation2d = SwerveDrive.Gyro.getRotation2d().unaryMinus();
+
+    SwerveDrive.FrontLeft.DriveEncoder.getVelocity();
+
     // Assign stick inputs to variables, to prevent discrepancies
     RightStickX = RightStick.getX();
     RightStickY = RightStick.getY();
@@ -178,57 +190,36 @@ public class Robot extends TimedRobot {
     }
     else {
       // Call swerveDrive() method, to do all the math and outputs for swerve drive
-      SwerveDrive.swerveDrive(RightStickX * 2, (RightStickY * -2), (RightStickTwist * 2.5), (1 - ((RightStick.getZ() + 1) / 2)), (1 - ((LeftStick.getZ() + 1) / 2)));
+      SwerveDrive.swerveDrive(Math.pow(RightStickX, 3) * 2, (Math.pow(RightStickY, 3) * -2), (Math.pow(RightStickTwist, 3) * 2.5), (1 - ((RightStick.getZ() + 1) / 2)), (1 - ((LeftStick.getZ() + 1) / 2)));
       SwerveDrive.setVariablesAndOptimize();
       SwerveDrive.setSwerveOutputs();
     }
 
-    SmartDashboard.putNumber("Gyro", SwerveDrive.GyroRotation2d.unaryMinus().getDegrees());
+    SmartDashboard.putNumber("Gyro", SwerveDrive.GyroRotation2d.getDegrees());
 
     MotorCurrents = new double[] {SwerveDrive.FrontLeft.Drive.getOutputCurrent(), SwerveDrive.FrontRight.Drive.getOutputCurrent(), SwerveDrive.BackLeft.Drive.getOutputCurrent(), SwerveDrive.BackRight.Drive.getOutputCurrent()};
     SmartDashboard.putNumberArray("RobotDrive Motors", MotorCurrents);
   
-    if (RightStick.getRawButton(2) == true) {
+    if (RightStick.getRawButtonPressed(2) == true) {
       SwerveDrive.Gyro.reset();
+      ArmAngle.getEncoder().setPosition(0);
+      ArmExtend.getEncoder().setPosition(0);
     }
-    if (RightStick.getRawButtonPressed(3)) {
-      IntakeExtend.toggle();
+    if (LeftStick.getRawButtonPressed(4)) {
+      ArmAnglePIDController.setReference(-22, ControlType.kPosition);
     }
-    if (RightStick.getRawButton(1)) {
-      Intake.set(-1);
+    else if (LeftStick.getRawButtonPressed(6)) {
+      ArmAnglePIDController.setReference(0, ControlType.kPosition);
     }
-    else if (RightStick.getRawButton(5)) {
-      Intake.set(1);
+    if (LeftStick.getRawButtonPressed(5)) {
+      ArmExtendPIDController.setReference(0, ControlType.kPosition);
     }
-    else {
-      Intake.set(0);
-    }
-    if (LeftStick.getRawButton(4)) {
-      ArmAngle.set(-.2);
-      //ArmAnglePIDController.setReference(0, ControlType.kPosition);
-    }
-    else if (LeftStick.getRawButton(6)) {
-      ArmAngle.set(.1);
-      //ArmAnglePIDController.setReference(-1, ControlType.kPosition);
-    }
-    else {
-      ArmAngle.set(0);
-    }
-    if (LeftStick.getRawButton(3)) {
-      ArmExtend.set(.2);
-      //ArmExtendPIDController.setReference(0, ControlType.kPosition);
-    }
-    else if (LeftStick.getRawButton(5)) {
-      ArmExtend.set(-.2);
-      //ArmExtendPIDController.setReference(1), ControlType.kPosition);
-    }
-    else {
-      ArmExtend.set(0);
+    else if (LeftStick.getRawButtonPressed(3)) {
+      ArmExtendPIDController.setReference(56, ControlType.kPosition);
     }
     if (LeftStick.getRawButtonPressed(1)) {
       Grabber.toggle();
     }
-    //System.out.println((ArmAngle.getEncoder().getPosition()/48)*360);
   }
 
   //Autonomous right away
@@ -238,7 +229,8 @@ public class Robot extends TimedRobot {
 
   //Autonomous repeat
   @Override
-  public void autonomousPeriodic(){ 
+  public void autonomousPeriodic(){
+    SwerveDrive.GyroRotation2d = SwerveDrive.Gyro.getRotation2d(); 
     Autonomous.runAutonomous();
   }
 }

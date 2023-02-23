@@ -17,6 +17,9 @@ import com.kauailabs.navx.frc.AHRS;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+
+import java.security.PublicKey;
+
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 
 /**
@@ -78,9 +81,7 @@ public class SwerveDrive extends SubsystemBase {
     Kinematics = new SwerveDriveKinematics(FrontRight.Location, FrontLeft.Location, BackLeft.Location, BackRight.Location);
     
     // Pass in wheel module locations, as well as initial robot angle and position for field oriented drive
-    // The robot position is unused for now, but might be utilized in autonomous later
-    //Odometry = new SwerveDriveOdometry(Kinematics, Gyro.getRotation2d(), new Pose2d(0, 0, new Rotation2d()));
-    Odometry = new SwerveDriveOdometry(Kinematics, Gyro.getRotation2d().unaryMinus(), ModulePositions, new Pose2d(0, 0, new Rotation2d()));
+    Odometry = new SwerveDriveOdometry(Kinematics, GyroRotation2d, ModulePositions, new Pose2d(0, 0, new Rotation2d()));
   }
   /**
 	 * Assign motor controllers their CAN numbers, and call the initEncodersAndPIDControllers() method for each wheel module
@@ -158,11 +159,8 @@ public class SwerveDrive extends SubsystemBase {
    *            Number to multiply the rotation speed of the robot by, to modify speed while driving
    */
   public void swerveDrive(Double X, Double Y, Double Spin, Double XYMod, Double SpinMod) {
-    // Need to set the gyro angle to a variable in order to invert the output
-    GyroRotation2d = Gyro.getRotation2d();
-
     // Set the desired speeds for the robot, we also pass in the gyro angle for field oriented drive
-    Speeds = ChassisSpeeds.fromFieldRelativeSpeeds((Y * XYMod), (X * XYMod), (Spin * SpinMod), GyroRotation2d.unaryMinus());
+    Speeds = ChassisSpeeds.fromFieldRelativeSpeeds((Y * XYMod), (X * XYMod), (Spin * SpinMod), GyroRotation2d);
 
     // Convert overall robot speeds and angle into speeds and angles for each wheel module, referred to as module states
     ModuleStates = Kinematics.toSwerveModuleStates(Speeds);
@@ -196,9 +194,8 @@ public class SwerveDrive extends SubsystemBase {
 
   public void setSwerveOutputs() {
     // Update Odometry, so the robot knows its position on the field
-    // This section currently only exists so we can use odometry, which solves many other issues, however it will likely be useful for autonomous movement.
     ModulePositions = new SwerveModulePosition[] {FrontRight.getPosition(), FrontLeft.getPosition(), BackLeft.getPosition(), BackRight.getPosition()};
-    Odometry.update(GyroRotation2d.unaryMinus(), ModulePositions);
+    Odometry.update(GyroRotation2d, ModulePositions);
 
     FrontRight.setOutputs(EncoderPosMod);
     FrontLeft.setOutputs(EncoderPosMod);
@@ -211,7 +208,7 @@ public class SwerveDrive extends SubsystemBase {
   }
 
   public Rotation2d getRotation() {
-    return Gyro.getRotation2d().unaryMinus();
+    return GyroRotation2d;
   }
 
   public void setModuleStates(SwerveModuleState[] DesiredStates) {
@@ -229,9 +226,6 @@ public class SwerveDrive extends SubsystemBase {
 
     // Back right module state
     BackRight.ModuleState = new SwerveModuleState(ModuleStates[3].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[3].angle.getRadians()));
-
-    // Need to set the gyro angle to a variable in order to invert the output
-    GyroRotation2d = Gyro.getRotation2d();
 
     //System.out.println(Odometry.getPoseMeters().getX());
 
