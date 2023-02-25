@@ -70,7 +70,7 @@ public class Wheel extends SubsystemBase {
     Steer.configClosedloopRamp(0);
 
     // Tell the Steer motor controller that an encoder exists, and what kind it is
-    Steer.configSelectedFeedbackSensor(FeedbackDevice.Analog, 0, 0);
+    Steer.configSelectedFeedbackSensor(FeedbackDevice.Analog);
 
     // Define what encoder the object "DriveEncoder" refers to
     DriveEncoder = Drive.getEncoder(SparkMaxRelativeEncoder.Type.kHallSensor, 42);

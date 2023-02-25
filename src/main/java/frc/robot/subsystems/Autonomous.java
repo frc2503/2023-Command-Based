@@ -30,8 +30,9 @@ import javax.swing.plaf.synth.SynthScrollBarUI;
 import java.io.*;
 
 public class Autonomous extends SubsystemBase {
-  public Tracking Tracking;
+  private Tracking Track;
   private SwerveDrive Swerve;
+  private RobotMechanisms Mechanisms;
   public String AutoFile;
   private File TrajFile;
   private TrajectoryConfig TrajConfig;
@@ -42,22 +43,23 @@ public class Autonomous extends SubsystemBase {
   private List<String> Lines;
   private List<String> CurrentLine;
   private List<String> FileOrder;
-  private List<String> AutoOrder;
+  public List<String> AutoOrder;
   private List<Translation2d> Translation2ds;
   private List<Rotation2d> Rotation2ds;
   private List<Pose2d> Pose2ds;
   private List<Translation2d> MiddlePoints;
-  private List<SwerveControllerCommand> SwerveControllerCommands;
-  private Integer AutoStage;
+  public List<SwerveControllerCommand> SwerveControllerCommands;
+  public Integer AutoStage;
   private Integer StartIndex;
-  private Integer SwerveControllerCommandIndex;
-  private Boolean IsScheduled = false;
+  public Integer SwerveControllerCommandIndex;
+  public Boolean IsScheduled = false;
   private double MaxSwerveVel;
   private double MaxSwerveAccel;
 
-  public Autonomous(SwerveDrive SwerveDrive, Tracking Track) {
+  public Autonomous(SwerveDrive SwerveDrive, Tracking Tracking, RobotMechanisms RobotMechanisms) {
     Swerve = SwerveDrive;
-    Tracking = Track;
+    Track = Tracking;
+    Mechanisms = RobotMechanisms;
     Lines = new ArrayList<String>();
     CurrentLine = new ArrayList<String>();
     FileOrder = new ArrayList<String>();
@@ -118,7 +120,7 @@ public class Autonomous extends SubsystemBase {
           if (AutoFile.contains("Blue")) {
             Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2)))));
           }
-          Pose2ds.add(new Pose2d(Translation2ds.get(Index), Rotation2ds.get(Index)));
+          Pose2ds.add(new Pose2d(Translation2ds.get(Translation2ds.size() - 1), Rotation2ds.get(Rotation2ds.size() - 1)));
         }
       }
       else {
@@ -135,7 +137,7 @@ public class Autonomous extends SubsystemBase {
           if (AutoFile.contains("Blue")) {
             Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2)))));
           }
-          Pose2ds.add(new Pose2d(Translation2ds.get(Index), Rotation2ds.get(Index)));
+          Pose2ds.add(new Pose2d(Translation2ds.get(Translation2ds.size() - 1), Rotation2ds.get(Rotation2ds.size() - 1)));
         }
       }
       
@@ -151,7 +153,7 @@ public class Autonomous extends SubsystemBase {
         Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2)))));
       }
       // Also add the Pose2d of this point to the list, for the endpoints
-      Pose2ds.add(new Pose2d(Translation2ds.get(Index), Rotation2ds.get(Index)));
+      Pose2ds.add(new Pose2d(Translation2ds.get(Translation2ds.size() - 1), Rotation2ds.get(Rotation2ds.size() - 1)));
       CurrentLine.clear();
     }
     // Set the position of the odometry to the starting position of the auto

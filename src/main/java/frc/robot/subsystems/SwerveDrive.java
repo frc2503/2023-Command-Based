@@ -137,7 +137,7 @@ public class SwerveDrive extends SubsystemBase {
    * @param SD
 	 *            Steer Derivative value
    */
-  public void setPID(Double DFF, Double DP, Double DI, Double DD, Double SP, Double SI, Double SD) {
+  public void setPID(double DFF, double DP, double DI, double DD, double SP, double SI, double SD) {
     FrontRight.setPIDValues(DFF, DP, DI, DD, SP, SI, SD);
     FrontLeft.setPIDValues(DFF, DP, DI, DD, SP, SI, SD);
     BackLeft.setPIDValues(DFF, DP, DI, DD, SP, SI, SD);
@@ -158,7 +158,7 @@ public class SwerveDrive extends SubsystemBase {
    * @param SpinMod
    *            Number to multiply the rotation speed of the robot by, to modify speed while driving
    */
-  public void swerveDrive(Double X, Double Y, Double Spin, Double XYMod, Double SpinMod) {
+  public void swerveDrive(double X, double Y, double Spin, double XYMod, double SpinMod) {
     // Set the desired speeds for the robot, we also pass in the gyro angle for field oriented drive
     Speeds = ChassisSpeeds.fromFieldRelativeSpeeds((Y * XYMod), (X * XYMod), (Spin * SpinMod), GyroRotation2d);
 
