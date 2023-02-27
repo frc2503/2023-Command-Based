@@ -112,15 +112,7 @@ public class Autonomous extends SubsystemBase {
       if (Index == 0) {
         if (CurrentLine.size() == 7) {
           FileOrder.add(CurrentLine.get(6));
-          // Create a copy of the point in order to fix an indexing error that would otherwise occur later
-          Translation2ds.add(new Translation2d(Double.parseDouble(CurrentLine.get(0)),Double.parseDouble(CurrentLine.get(1))));
-          if (AutoFile.contains("Red")) {
-            Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))) + Math.PI));
-          }
-          if (AutoFile.contains("Blue")) {
-            Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2)))));
-          }
-          Pose2ds.add(new Pose2d(Translation2ds.get(Translation2ds.size() - 1), Rotation2ds.get(Rotation2ds.size() - 1)));
+          addPointToLists();
         }
       }
       else {
@@ -130,30 +122,11 @@ public class Autonomous extends SubsystemBase {
         // This simplifies later code by having points for both the endpoint of this move and the beginning of the next
         if (CurrentLine.size() == 7) {
           FileOrder.add(CurrentLine.get(6));
-          Translation2ds.add(new Translation2d(Double.parseDouble(CurrentLine.get(0)),Double.parseDouble(CurrentLine.get(1))));
-          if (AutoFile.contains("Red")) {
-            Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))) + Math.PI));
-          }
-          if (AutoFile.contains("Blue")) {
-            Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2)))));
-          }
-          Pose2ds.add(new Pose2d(Translation2ds.get(Translation2ds.size() - 1), Rotation2ds.get(Rotation2ds.size() - 1)));
+          addPointToLists();
         }
       }
       
-      // Add the Translation2d of this point to the list
-      Translation2ds.add(new Translation2d(Double.parseDouble(CurrentLine.get(0)),Double.parseDouble(CurrentLine.get(1))));
-      // Check what alliance the auto is for, since Pathweaver doesn't take into account the alliance the robot is on
-      if (AutoFile.contains("Red")) {
-        // Add the Rotation2d of this point to the list, and invert it to solve the previously stated issue
-        Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))) + Math.PI));
-      }
-      if (AutoFile.contains("Blue")) {
-        // Add the Rotation2d of this point to the list
-        Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2)))));
-      }
-      // Also add the Pose2d of this point to the list, for the endpoints
-      Pose2ds.add(new Pose2d(Translation2ds.get(Translation2ds.size() - 1), Rotation2ds.get(Rotation2ds.size() - 1)));
+      addPointToLists();
       CurrentLine.clear();
     }
     // Set the position of the odometry to the starting position of the auto
@@ -188,6 +161,22 @@ public class Autonomous extends SubsystemBase {
     }
     System.out.println("Start X:" + Translation2ds.get(0).getX());
     System.out.println("Start Y:" + Translation2ds.get(0).getY());
+  }
+
+  private void addPointToLists() {
+    // Add the Translation2d of the point to the list
+    Translation2ds.add(new Translation2d(Double.parseDouble(CurrentLine.get(0)),Double.parseDouble(CurrentLine.get(1))));
+    // Check what alliance the auto is for, since Pathweaver doesn't take into account the alliance the robot is on
+    if (AutoFile.contains("Red")) {
+      // Add the Rotation2d of the point to the list, and invert it to solve the previously stated issue
+      Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))) + Math.PI));
+    }
+    if (AutoFile.contains("Blue")) {
+      // Add the Rotation2d of the point to the list
+      Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2)))));
+    }
+    // Also add the Pose2d of the point to the list, for the endpoints
+    Pose2ds.add(new Pose2d(Translation2ds.get(Translation2ds.size() - 1), Rotation2ds.get(Rotation2ds.size() - 1)));
   }
 
   public void runAutonomous() {
