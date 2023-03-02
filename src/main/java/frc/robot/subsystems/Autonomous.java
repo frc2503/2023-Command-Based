@@ -19,6 +19,7 @@ import edu.wpi.first.math.trajectory.constraint.SwerveDriveKinematicsConstraint;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
+import edu.wpi.first.wpilibj.Timer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,6 +56,7 @@ public class Autonomous extends SubsystemBase {
   public Boolean IsScheduled = false;
   private double MaxSwerveVel;
   private double MaxSwerveAccel;
+  public Timer timer;
 
   public Autonomous(SwerveDrive SwerveDrive, Tracking Tracking, RobotMechanisms RobotMechanisms) {
     Swerve = SwerveDrive;
@@ -71,8 +73,9 @@ public class Autonomous extends SubsystemBase {
     SwerveControllerCommands = new ArrayList<SwerveControllerCommand>();
     AutoStage = 0;
     SwerveControllerCommandIndex = 0;
-    MaxSwerveVel = 1;
-    MaxSwerveAccel = 2;
+    MaxSwerveVel = 4;
+    MaxSwerveAccel = 4;
+    timer = new Timer();
   }
 
   public void initTrajectory() throws FileNotFoundException {
@@ -197,25 +200,79 @@ public class Autonomous extends SubsystemBase {
     if (AutoStage <= AutoOrder.size() - 1) {
       if (AutoOrder.get(AutoStage) == "Grab Cone") {
         System.out.println("Grab Cone");
-        AutoStage++;
+        Mechanisms.DesiredState = "Grab";
+        if(Mechanisms.isAtDesiredState()) {
+          if(timer.get() > 0) { //If we are grabbing the cone, we don't want to open grabber, nor keep moving
+            Mechanisms.openGrabber();
+            Track.centerOnCone();
+          }
+          if(Track.IntakeTargetOffsetV.getDouble(0) <= -100) {//moved towards cone
+            if(timer.get() <= 0.0) {
+              Mechanisms.closeGrabber();
+              timer.start();
+            }
+            if(timer.get() >= 0.1) { //waited for grabber to close
+              Mechanisms.DesiredState = "High";
+              AutoStage++;
+              timer.stop();
+              timer.reset();
+            }
+          }
+        }
       }
     }
     if (AutoStage <= AutoOrder.size() - 1) {
       if (AutoOrder.get(AutoStage) == "Grab Cube") {
         System.out.println("Grab Cube");
-        AutoStage++;
+        Mechanisms.DesiredState = "Grab";
+        if(Mechanisms.isAtDesiredState()) {
+          if(timer.get() > 0) { //If we are grabbing the cube, we don't want to open grabber, nor keep moving
+            Mechanisms.openGrabber();
+            Track.centerOnCube();
+          }
+          if(Track.IntakeTargetOffsetV.getDouble(0) <= -100) {//moved towards cube
+            if(timer.get() <= 0.0) {
+              Mechanisms.closeGrabber();
+              timer.start();
+            }
+            if(timer.get() >= 0.1) { //waited for grabber to close
+              Mechanisms.DesiredState = "High";
+              AutoStage++;
+              timer.stop();
+              timer.reset();
+            }
+          }
+        }
       }
     }
     if (AutoStage <= AutoOrder.size() - 1) {
       if (AutoOrder.get(AutoStage) == "Place Cone") {
         System.out.println("Place Cone");
-        AutoStage++;
+        Mechanisms.DesiredState = "Place2";
+        if(Mechanisms.isAtDesiredState()) {
+          Track.centerOnPole();
+          if(Math.abs(Track.ArmTargetOffsetV.getDouble(0)) <= 20) {
+            Mechanisms.openGrabber();
+            Mechanisms.DesiredState = "High";
+            AutoStage++;
+          }
+        }
       }
     }
     if (AutoStage <= AutoOrder.size() - 1) {
       if (AutoOrder.get(AutoStage) == "Place Cube") {
-        System.out.println("Place Cube");
-        AutoStage++;
+        if (AutoOrder.get(AutoStage) == "Place Cube") {
+          System.out.println("Place Cube");
+          Mechanisms.DesiredState = "Place2";
+          if(Mechanisms.isAtDesiredState()) {
+            //Track.centerOnPlatform();
+            if(Math.abs(Track.ArmTargetOffsetV.getDouble(0)) <= 20) {
+              Mechanisms.openGrabber();
+              Mechanisms.DesiredState = "High";
+              AutoStage++;
+            }
+          }
+        }
       }
     }
     if (AutoStage <= AutoOrder.size() - 1) {

@@ -59,13 +59,21 @@ public class Tracking extends SubsystemBase {
   }
   public void centerOnCone() {
     IntakePipeline.setValue(0);
-    Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
+    if(Math.abs(IntakeTargetOffsetH.getDouble(42)) <= 40) { //If centered on the cone with deadzone, move forward. Default prevents move
+      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0.25, 0.0, .1, 0.0);
+    } else {
+      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
+    }
     Swerve.setVariablesAndOptimize();
     Swerve.setSwerveOutputs();
   }
   public void centerOnCube() {
     IntakePipeline.setValue(1);
-    Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
+    if(Math.abs(IntakeTargetOffsetH.getDouble(42)) <= 40) { //If centered on the cube with deadzone, move forward. Default prevents move
+      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0.25, 0.0, .1, 0.0);
+    } else {
+      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
+    }
     Swerve.setVariablesAndOptimize();
     Swerve.setSwerveOutputs();
   }

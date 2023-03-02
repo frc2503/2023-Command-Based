@@ -133,6 +133,7 @@ public class Robot extends TimedRobot {
  
   @Override
   public void teleopInit() {
+    RobotMechanisms.extendLimelight();
   }
 
   @Override
@@ -158,9 +159,9 @@ public class Robot extends TimedRobot {
     }
 
     if (LeftStick.getRawButton(2)) {
-      Tracking.centerOnPole();
+      //Tracking.centerOnPole();
     }
-    else {
+    else if (RobotMechanisms.DesiredState != "Charge") {
       // Call swerveDrive() method, to do all the math and outputs for swerve drive
       SwerveDrive.swerveDrive(Math.pow(RightStickX, 3) * 3, (Math.pow(RightStickY, 3) * -3), (Math.pow(RightStickTwist, 3) * 3), (1 - ((RightStick.getZ() + 1) / 2)), (1 - ((LeftStick.getZ() + 1) / 2)));
       SwerveDrive.setVariablesAndOptimize();
@@ -190,8 +191,17 @@ public class Robot extends TimedRobot {
     else if (LeftStick.getRawButtonPressed(3)) {
       RobotMechanisms.DesiredState = "High";
     }
+    else if (RightStick.getRawButtonPressed(3)){
+      RobotMechanisms.DesiredState = "Charge";
+    }
     if (LeftStick.getRawButtonPressed(1)) {
       RobotMechanisms.grabObject();
+    }
+    if (RightStick.getRawButtonPressed(4)) {
+      RobotMechanisms.extendLimelight();
+    }
+    if (RightStick.getRawButtonPressed(6)) {
+      RobotMechanisms.retractLimelight();
     }
 
     RobotMechanisms.goToDesiredState();
@@ -203,6 +213,9 @@ public class Robot extends TimedRobot {
   //Autonomous right away
   @Override
   public void autonomousInit(){
+    RobotMechanisms.extendLimelight();
+    Autonomous.timer.stop();
+    Autonomous.timer.reset();
   }
 
   //Autonomous repeat
