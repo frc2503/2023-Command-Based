@@ -158,9 +158,8 @@ public class RobotMechanisms extends SubsystemBase {
           AngleToAdjust = Swerve.Gyro.getPitch();
         }
         System.out.println(AngleToAdjust);
-        Swerve.swerveDrive(0, ChargePIDController.calculate(AngleToAdjust, 0)/300, 0, 1, 1);
-        Swerve.setVariablesAndOptimize();
-        Swerve.setSwerveOutputs();
+        Swerve.calculateSpeedsAndAngles(0, ChargePIDController.calculate(AngleToAdjust, 0)/300, 0, 1, 1);
+        Swerve.optimizeAndSetOutputs();
         System.out.println("Output:" + ChargePIDController.calculate(AngleToAdjust * 20, 0));
       }
     }

@@ -104,7 +104,7 @@ public class Robot extends TimedRobot {
     SwerveDrive.AutoName = AutoChooser.getSelected();
     if (AutoChooser.getSelected() != null) {
       System.out.println(Autonomous.AutoFile);
-    try {
+      try {
         Autonomous.initTrajectory();
       } catch (FileNotFoundException e) {
         System.out.println("AUTO NOT FOUND");
@@ -126,6 +126,7 @@ public class Robot extends TimedRobot {
       }
       PrevAuto = AutoChooser.getSelected();
     }
+
     /**
     ArmExtendPIDController.setFF(FFGain.getEntry().getDouble(0));
     ArmExtendPIDController.setP(PGain.getEntry().getDouble(0));
@@ -167,9 +168,8 @@ public class Robot extends TimedRobot {
     }
     else if (RobotMechanisms.DesiredState != "Charge") {
       // Call swerveDrive() method, to do all the math and outputs for swerve drive
-      SwerveDrive.swerveDrive(Math.pow(RightStickX, 3) * 3, (Math.pow(RightStickY, 3) * -3), (Math.pow(RightStickTwist, 3) * 3), (1 - ((RightStick.getZ() + 1) / 2)), (1 - ((LeftStick.getZ() + 1) / 2)));
-      SwerveDrive.setVariablesAndOptimize();
-      SwerveDrive.setSwerveOutputs();
+      SwerveDrive.calculateSpeedsAndAngles(Math.pow(RightStickX, 3) * 3, (Math.pow(RightStickY, 3) * -3), (Math.pow(RightStickTwist, 3) * 3), (1 - ((RightStick.getZ() + 1) / 2)), (1 - ((LeftStick.getZ() + 1) / 2)));
+      SwerveDrive.optimizeAndSetOutputs();
     }
 
     SmartDashboard.putNumber("Gyro", SwerveDrive.GyroRotation2d.getDegrees());

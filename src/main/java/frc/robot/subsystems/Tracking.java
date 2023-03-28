@@ -21,6 +21,7 @@ public class Tracking extends SubsystemBase {
   public NetworkTableEntry ArmTargetArea;
   public NetworkTableEntry ArmTargetSkew;
   public NetworkTableEntry ArmPipeline;
+  
   public NetworkTable IntakeLimelight;
   public NetworkTableEntry IntakeHasTarget;
   public NetworkTableEntry IntakeTargetOffsetH;
@@ -57,43 +58,39 @@ public class Tracking extends SubsystemBase {
   public void centerOnPole() {
     ArmPipeline.setValue(0);
     if (ArmTargetOffsetH.getDouble(0) >= 1) {
-      Swerve.swerveDrive(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
+      Swerve.calculateSpeedsAndAngles(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
     }
     else {
-      Swerve.swerveDrive(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), -PID.calculate(ArmTargetOffsetV.getDouble(0), 0.0), 0.0, .1, 0.0);
+      Swerve.calculateSpeedsAndAngles(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), -PID.calculate(ArmTargetOffsetV.getDouble(0), 0.0), 0.0, .1, 0.0);
     }
-    Swerve.setVariablesAndOptimize();
-    Swerve.setSwerveOutputs();
+    Swerve.optimizeAndSetOutputs();
   }
   public void centerOnPlatform() {
     ArmPipeline.setValue(1);
     if (ArmTargetOffsetH.getDouble(0) >= 1) {
-      Swerve.swerveDrive(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
+      Swerve.calculateSpeedsAndAngles(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
     }
     else {
-      Swerve.swerveDrive(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), -PID.calculate(ArmTargetOffsetV.getDouble(0), 0.0), 0.0, .1, 0.0);
+      Swerve.calculateSpeedsAndAngles(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), -PID.calculate(ArmTargetOffsetV.getDouble(0), 0.0), 0.0, .1, 0.0);
     }
-    Swerve.setVariablesAndOptimize();
-    Swerve.setSwerveOutputs();
+    Swerve.optimizeAndSetOutputs();
   }
   public void centerOnCone() {
     IntakePipeline.setValue(0);
     if(Math.abs(IntakeTargetOffsetH.getDouble(0)) >= 1) { //If centered on the cone with deadzone, move forward. Default prevents move
-      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0, 0.0, .1, 0.0);
+      Swerve.calculateSpeedsAndAngles(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0, 0.0, .1, 0.0);
     } else {
-      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 1, 0.0, .1, 0.0);
+      Swerve.calculateSpeedsAndAngles(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 1, 0.0, .1, 0.0);
     }
-    Swerve.setVariablesAndOptimize();
-    Swerve.setSwerveOutputs();
+    Swerve.optimizeAndSetOutputs();
   }
   public void centerOnCube() {
     IntakePipeline.setValue(1);
     if(Math.abs(IntakeTargetOffsetH.getDouble(0)) >= 1) { //If centered on the cube with deadzone, move forward. Default prevents move
-      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0, 0.0, .1, 0.0);
+      Swerve.calculateSpeedsAndAngles(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0, 0.0, .1, 0.0);
     } else {
-      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 1, 0.0, .1, 0.0);
+      Swerve.calculateSpeedsAndAngles(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 1, 0.0, .1, 0.0);
     }
-    Swerve.setVariablesAndOptimize();
-    Swerve.setSwerveOutputs();
+    Swerve.optimizeAndSetOutputs();
   }
 }
