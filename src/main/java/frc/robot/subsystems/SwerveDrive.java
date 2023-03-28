@@ -41,10 +41,14 @@ public class SwerveDrive extends SubsystemBase {
   private SwerveModuleState[] ModuleStates;
   public SwerveModulePosition[] ModulePositions;
 
+  public String AutoName;
+  
   public Wheel FrontRight;
   public Wheel FrontLeft;
   public Wheel BackLeft;
   public Wheel BackRight;
+
+  public boolean FieldOrientedSwerveEnabled;
 
   /**
    * SwerveDrive class constructor, initializes all variables, objects, and methods for the created SwerveDrive object
@@ -71,6 +75,9 @@ public class SwerveDrive extends SubsystemBase {
     // Amount the drive speed can increase or decrease by, max value of 1, min value of 0
     // Purposefully set very low because of how quickly the code runs
     DriveRampValue = .05;
+
+    // We usually want this enabled, but toggling this off will treat the camera angle as "forward"
+    FieldOrientedSwerveEnabled = true;
   }
 
   public void initKinematicsAndOdometry() {
@@ -160,7 +167,11 @@ public class SwerveDrive extends SubsystemBase {
    */
   public void swerveDrive(double X, double Y, double Spin, double XYMod, double SpinMod) {
     // Set the desired speeds for the robot, we also pass in the gyro angle for field oriented drive
-    Speeds = ChassisSpeeds.fromFieldRelativeSpeeds((Y * XYMod), (X * XYMod), (Spin * SpinMod), GyroRotation2d);
+    if (FieldOrientedSwerveEnabled) {
+      Speeds = ChassisSpeeds.fromFieldRelativeSpeeds((Y * XYMod), (X * XYMod), (Spin * SpinMod), GyroRotation2d);
+    } else {
+      Speeds = ChassisSpeeds.fromFieldRelativeSpeeds((Y * XYMod), (X * XYMod), (Spin * SpinMod), new Rotation2d(0));
+    }
 
     // Convert overall robot speeds and angle into speeds and angles for each wheel module, referred to as module states
     ModuleStates = Kinematics.toSwerveModuleStates(Speeds);
@@ -195,7 +206,13 @@ public class SwerveDrive extends SubsystemBase {
   public void setSwerveOutputs() {
     // Update Odometry, so the robot knows its position on the field
     ModulePositions = new SwerveModulePosition[] {FrontRight.getPosition(), FrontLeft.getPosition(), BackLeft.getPosition(), BackRight.getPosition()};
-    Odometry.update(GyroRotation2d, ModulePositions);
+    
+    if (FieldOrientedSwerveEnabled) {
+      Odometry.update(GyroRotation2d, ModulePositions);
+    }
+    else if (!FieldOrientedSwerveEnabled) {
+      Odometry.update(new Rotation2d(0), ModulePositions);
+    }
 
     FrontRight.setOutputs(EncoderPosMod);
     FrontLeft.setOutputs(EncoderPosMod);

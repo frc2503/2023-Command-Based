@@ -20,6 +20,7 @@ public class Tracking extends SubsystemBase {
   public NetworkTableEntry ArmTargetOffsetV;
   public NetworkTableEntry ArmTargetArea;
   public NetworkTableEntry ArmTargetSkew;
+  public NetworkTableEntry ArmPipeline;
   public NetworkTable IntakeLimelight;
   public NetworkTableEntry IntakeHasTarget;
   public NetworkTableEntry IntakeTargetOffsetH;
@@ -40,6 +41,7 @@ public class Tracking extends SubsystemBase {
     ArmTargetOffsetV = ArmLimelight.getEntry("ty");
     ArmTargetArea = ArmLimelight.getEntry("ta");
     ArmTargetSkew = ArmLimelight.getEntry("ts");
+    ArmPipeline = ArmLimelight.getEntry("pipeline");
 
     IntakeLimelight = Inst.getTable("limelight-intake");
     IntakeHasTarget = IntakeLimelight.getEntry("tv");
@@ -53,26 +55,43 @@ public class Tracking extends SubsystemBase {
   }
 
   public void centerOnPole() {
-    Swerve.swerveDrive(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
+    ArmPipeline.setValue(0);
+    if (ArmTargetOffsetH.getDouble(0) >= 1) {
+      Swerve.swerveDrive(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
+    }
+    else {
+      Swerve.swerveDrive(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), -PID.calculate(ArmTargetOffsetV.getDouble(0), 0.0), 0.0, .1, 0.0);
+    }
+    Swerve.setVariablesAndOptimize();
+    Swerve.setSwerveOutputs();
+  }
+  public void centerOnPlatform() {
+    ArmPipeline.setValue(1);
+    if (ArmTargetOffsetH.getDouble(0) >= 1) {
+      Swerve.swerveDrive(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
+    }
+    else {
+      Swerve.swerveDrive(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), -PID.calculate(ArmTargetOffsetV.getDouble(0), 0.0), 0.0, .1, 0.0);
+    }
     Swerve.setVariablesAndOptimize();
     Swerve.setSwerveOutputs();
   }
   public void centerOnCone() {
     IntakePipeline.setValue(0);
-    if(Math.abs(IntakeTargetOffsetH.getDouble(42)) <= 40) { //If centered on the cone with deadzone, move forward. Default prevents move
-      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0.25, 0.0, .1, 0.0);
+    if(Math.abs(IntakeTargetOffsetH.getDouble(0)) >= 1) { //If centered on the cone with deadzone, move forward. Default prevents move
+      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0, 0.0, .1, 0.0);
     } else {
-      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
+      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 1, 0.0, .1, 0.0);
     }
     Swerve.setVariablesAndOptimize();
     Swerve.setSwerveOutputs();
   }
   public void centerOnCube() {
     IntakePipeline.setValue(1);
-    if(Math.abs(IntakeTargetOffsetH.getDouble(42)) <= 40) { //If centered on the cube with deadzone, move forward. Default prevents move
-      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0.25, 0.0, .1, 0.0);
+    if(Math.abs(IntakeTargetOffsetH.getDouble(0)) >= 1) { //If centered on the cube with deadzone, move forward. Default prevents move
+      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0, 0.0, .1, 0.0);
     } else {
-      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
+      Swerve.swerveDrive(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 1, 0.0, .1, 0.0);
     }
     Swerve.setVariablesAndOptimize();
     Swerve.setSwerveOutputs();

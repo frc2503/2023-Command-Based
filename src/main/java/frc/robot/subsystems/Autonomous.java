@@ -26,8 +26,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
-import javax.swing.plaf.synth.SynthScrollBarUI;
-
 import java.io.*;
 
 public class Autonomous extends SubsystemBase {
@@ -73,8 +71,8 @@ public class Autonomous extends SubsystemBase {
     SwerveControllerCommands = new ArrayList<SwerveControllerCommand>();
     AutoStage = 0;
     SwerveControllerCommandIndex = 0;
-    MaxSwerveVel = 4;
-    MaxSwerveAccel = 4;
+    MaxSwerveVel = 3;
+    MaxSwerveAccel = 3;
     timer = new Timer();
   }
 
@@ -144,8 +142,6 @@ public class Autonomous extends SubsystemBase {
         // Store the starting index, since this is the beginning point of the move, then increment the index
         StartIndex = Index++;
         // Create the list of midpoints
-        System.out.println(Index);
-        System.out.println(FileOrder.size() - 2);
         if (Index <= FileOrder.size() - 2) {
           while (Index <= FileOrder.size() - 2 & FileOrder.get(Index) == "Move") {
             MiddlePoints.add(Translation2ds.get(Index++));
@@ -162,8 +158,7 @@ public class Autonomous extends SubsystemBase {
       // Add the command to the AutoOrder list, which will act as a roadmap for Auto
       AutoOrder.add(FileOrder.get(Index));
     }
-    System.out.println("Start X:" + Translation2ds.get(0).getX());
-    System.out.println("Start Y:" + Translation2ds.get(0).getY());
+    System.out.println(AutoOrder);
   }
 
   private void addPointToLists() {
@@ -184,7 +179,7 @@ public class Autonomous extends SubsystemBase {
 
   public void runAutonomous() {
     if (AutoStage <= AutoOrder.size() - 1) {
-      if (AutoOrder.get(AutoStage) == "Move") {
+      if (AutoOrder.get(AutoStage).equals("Move")) {
         if (!IsScheduled) {
           System.out.println("Move");
           SwerveControllerCommands.get(SwerveControllerCommandIndex).andThen(() -> Swerve.stop()).schedule();
@@ -198,15 +193,15 @@ public class Autonomous extends SubsystemBase {
       }
     }
     if (AutoStage <= AutoOrder.size() - 1) {
-      if (AutoOrder.get(AutoStage) == "Grab Cone") {
+      if (AutoOrder.get(AutoStage).equals("Grab Cone")) {
         System.out.println("Grab Cone");
         Mechanisms.DesiredState = "Grab";
+        Mechanisms.openGrabber();
         if(Mechanisms.isAtDesiredState()) {
           if(timer.get() > 0) { //If we are grabbing the cone, we don't want to open grabber, nor keep moving
-            Mechanisms.openGrabber();
             Track.centerOnCone();
           }
-          if(Track.IntakeTargetOffsetV.getDouble(0) <= -100) {//moved towards cone
+          if(Math.abs(Track.IntakeTargetOffsetV.getDouble(0)) <= 20) {//moved towards cone
             if(timer.get() <= 0.0) {
               Mechanisms.closeGrabber();
               timer.start();
@@ -222,15 +217,15 @@ public class Autonomous extends SubsystemBase {
       }
     }
     if (AutoStage <= AutoOrder.size() - 1) {
-      if (AutoOrder.get(AutoStage) == "Grab Cube") {
+      if (AutoOrder.get(AutoStage).equals("Grab Cube")) {
         System.out.println("Grab Cube");
         Mechanisms.DesiredState = "Grab";
+        Mechanisms.openGrabber();
         if(Mechanisms.isAtDesiredState()) {
-          if(timer.get() > 0) { //If we are grabbing the cube, we don't want to open grabber, nor keep moving
-            Mechanisms.openGrabber();
+          if(timer.get() > 0) { //If we are grabbing the cone, we don't want to open grabber, nor keep moving
             Track.centerOnCube();
           }
-          if(Track.IntakeTargetOffsetV.getDouble(0) <= -100) {//moved towards cube
+          if(Math.abs(Track.IntakeTargetOffsetV.getDouble(0)) <= 20) {//moved towards cone
             if(timer.get() <= 0.0) {
               Mechanisms.closeGrabber();
               timer.start();
@@ -246,12 +241,43 @@ public class Autonomous extends SubsystemBase {
       }
     }
     if (AutoStage <= AutoOrder.size() - 1) {
-      if (AutoOrder.get(AutoStage) == "Place Cone") {
+      if (AutoOrder.get(AutoStage).equals("Place Cone")) {
         System.out.println("Place Cone");
-        Mechanisms.DesiredState = "Place2";
+        Mechanisms.DesiredState = "Place1";
+        System.out.println("Arm Angle: " + Mechanisms.ArmAngle.getEncoder().getPosition());
         if(Mechanisms.isAtDesiredState()) {
-          Track.centerOnPole();
-          if(Math.abs(Track.ArmTargetOffsetV.getDouble(0)) <= 20) {
+          if(timer.get() <= 0.0) {
+            Mechanisms.openGrabber();
+            timer.start();
+          }
+          if(timer.get() >= 0.2) { //wait for grabber to open
+            Mechanisms.DesiredState = "Grab";
+            AutoStage++;
+            timer.stop();
+            timer.reset();
+          }
+          // Track.centerOnPole();
+          // if(Math.abs(Track.ArmTargetOffsetH.getDouble(0)) <= 20) {
+          //   if(timer.get() <= 0.0) {
+          //     Mechanisms.openGrabber();
+          //     timer.start();
+          //   }
+          //   if(timer.get() >= 0.2) { //waited for grabber to open
+          //     Mechanisms.DesiredState = "Stowed";
+          //     AutoStage++;
+          //     timer.stop();
+          //     timer.reset();
+          //   }
+        }
+      }
+    }
+    if (AutoStage <= AutoOrder.size() - 1) {
+      if (AutoOrder.get(AutoStage).equals("Place Cube")) {
+        System.out.println("Place Cube");
+        Mechanisms.DesiredState = "Place1";
+        if(Mechanisms.isAtDesiredState()) {
+          Track.centerOnPlatform();
+          if(Math.abs(Track.ArmTargetOffsetH.getDouble(0)) <= 20) {
             Mechanisms.openGrabber();
             Mechanisms.DesiredState = "High";
             AutoStage++;
@@ -260,23 +286,7 @@ public class Autonomous extends SubsystemBase {
       }
     }
     if (AutoStage <= AutoOrder.size() - 1) {
-      if (AutoOrder.get(AutoStage) == "Place Cube") {
-        if (AutoOrder.get(AutoStage) == "Place Cube") {
-          System.out.println("Place Cube");
-          Mechanisms.DesiredState = "Place2";
-          if(Mechanisms.isAtDesiredState()) {
-            //Track.centerOnPlatform();
-            if(Math.abs(Track.ArmTargetOffsetV.getDouble(0)) <= 20) {
-              Mechanisms.openGrabber();
-              Mechanisms.DesiredState = "High";
-              AutoStage++;
-            }
-          }
-        }
-      }
-    }
-    if (AutoStage <= AutoOrder.size() - 1) {
-      if (AutoOrder.get(AutoStage) == "Charge") {
+      if (AutoOrder.get(AutoStage).equals("Charge")) {
         System.out.println("Charge");
         AutoStage++;
       }

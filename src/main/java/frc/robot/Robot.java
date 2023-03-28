@@ -61,10 +61,12 @@ public class Robot extends TimedRobot {
   private SimpleWidget PGain;
   private SimpleWidget IGain;
   private SimpleWidget DGain;
+  private boolean ManualArmRead;
 
   @Override
   public void robotInit() {
     Inst = NetworkTableInstance.getDefault();
+    ManualArmRead = false;
 
     AutoChooser = new SendableChooser<String>();
     AutoNames = Filesystem.getDeployDirectory().toPath().resolve("output/paths").toFile().list();
@@ -99,6 +101,7 @@ public class Robot extends TimedRobot {
     SwerveDrive.initKinematicsAndOdometry();
     PrevAuto = AutoChooser.getSelected();
     Autonomous.AutoFile = AutoChooser.getSelected();
+    SwerveDrive.AutoName = AutoChooser.getSelected();
     if (AutoChooser.getSelected() != null) {
       System.out.println(Autonomous.AutoFile);
     try {
@@ -114,6 +117,7 @@ public class Robot extends TimedRobot {
     CommandScheduler.getInstance().run();
     if (PrevAuto != AutoChooser.getSelected()) {
       Autonomous.AutoFile = AutoChooser.getSelected();
+      SwerveDrive.AutoName = AutoChooser.getSelected();
       System.out.println(Autonomous.AutoFile);
       try {
         Autonomous.initTrajectory();
@@ -178,22 +182,51 @@ public class Robot extends TimedRobot {
     }
     if (LeftStick.getRawButtonPressed(5)) {
       RobotMechanisms.DesiredState = "Stowed";
+      RobotMechanisms.ArmAngleMod = 0;
+      RobotMechanisms.ArmExtendMod = 0;
     }
     else if (LeftStick.getRawButtonPressed(2)) {
       RobotMechanisms.DesiredState = "Grab";
+      RobotMechanisms.ArmAngleMod = 0;
+      RobotMechanisms.ArmExtendMod = 0;
     }
     else if (LeftStick.getRawButtonPressed(6)) {
       RobotMechanisms.DesiredState = "Place1";
+      RobotMechanisms.ArmAngleMod = 0;
+      RobotMechanisms.ArmExtendMod = 0;
     }
     else if (LeftStick.getRawButtonPressed(4)) {
       RobotMechanisms.DesiredState = "Place2";
+      RobotMechanisms.ArmAngleMod = 0;
+      RobotMechanisms.ArmExtendMod = 0;
     }
     else if (LeftStick.getRawButtonPressed(3)) {
       RobotMechanisms.DesiredState = "High";
+      RobotMechanisms.ArmAngleMod = 0;
+      RobotMechanisms.ArmExtendMod = 0;
     }
-    else if (RightStick.getRawButtonPressed(3)){
-      RobotMechanisms.DesiredState = "Charge";
+    // else if (RightStick.getRawButtonPressed(3)){
+    //   RobotMechanisms.DesiredState = "Charge";
+    //   RobotMechanisms.ArmAngleMod = 0;
+    //   RobotMechanisms.ArmExtendMod = 0;
+    // }
+    else if (RightStick.getRawButtonPressed(5)) {
+      SwerveDrive.FieldOrientedSwerveEnabled = !SwerveDrive.FieldOrientedSwerveEnabled;
+      System.out.println("Field oriented swerve state updated to " + SwerveDrive.FieldOrientedSwerveEnabled);
     }
+
+    if (LeftStick.getPOV() == 0 & !ManualArmRead) {
+      ManualArmRead = true;
+      RobotMechanisms.ArmAngleMod += 0.5;
+    }
+    if (LeftStick.getPOV() == 180 & !ManualArmRead) {
+      ManualArmRead = true;
+      RobotMechanisms.ArmAngleMod -= 0.5;
+    }
+    if (LeftStick.getPOV() == -1 & ManualArmRead) {
+      ManualArmRead = false;
+    }
+
     if (LeftStick.getRawButtonPressed(1)) {
       RobotMechanisms.grabObject();
     }
@@ -205,9 +238,6 @@ public class Robot extends TimedRobot {
     }
 
     RobotMechanisms.goToDesiredState();
-
-    System.out.println(RobotMechanisms.ArmAngle.getEncoder().getPosition());
-    System.out.println(RobotMechanisms.ArmExtend.getEncoder().getPosition());
   }
 
   //Autonomous right away
@@ -223,5 +253,6 @@ public class Robot extends TimedRobot {
   public void autonomousPeriodic(){
     SwerveDrive.GyroRotation2d = SwerveDrive.Gyro.getRotation2d(); 
     Autonomous.runAutonomous();
+    RobotMechanisms.goToDesiredState();
   }
 }
