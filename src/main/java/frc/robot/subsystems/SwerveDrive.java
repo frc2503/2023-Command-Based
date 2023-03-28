@@ -145,7 +145,7 @@ public class SwerveDrive extends SubsystemBase {
   }
 
   /**
-   * This method does all of the math for the swerve drive, and outputs to the wheel modules
+   * Do all of the math to calculate the speeds and angles for each wheel on the swerve drive
    * 
    * @param X
 	 *            Desired X speed of the robot from -1 to 1
@@ -158,7 +158,7 @@ public class SwerveDrive extends SubsystemBase {
    * @param SpinMod
    *            Number to multiply the rotation speed of the robot by, to modify speed while driving
    */
-  public void swerveDrive(double X, double Y, double Spin, double XYMod, double SpinMod) {
+  public void calculateSpeedsAndAngles(double X, double Y, double Spin, double XYMod, double SpinMod) {
     // Set the desired speeds for the robot, we also pass in the gyro angle for field oriented drive
     Speeds = ChassisSpeeds.fromFieldRelativeSpeeds((Y * XYMod), (X * XYMod), (Spin * SpinMod), GyroRotation2d);
 
@@ -178,7 +178,10 @@ public class SwerveDrive extends SubsystemBase {
     BackRight.ModuleState = ModuleStates[3];
   }
 
-  public void setVariablesAndOptimize() {
+  /**
+   * Do all of the math to optimize wheel angles, and output to the wheel modules
+   */
+  public void optimizeAndSetOutputs() {
     // Do math to get multiple variables out of the encoder position
     FrontLeft.setEncoderVariables(EncoderPosMod);
     FrontRight.setEncoderVariables(EncoderPosMod);
@@ -190,9 +193,7 @@ public class SwerveDrive extends SubsystemBase {
     FrontLeft.optimizeAndCalculateVariables(DriveRampValue);
     BackLeft.optimizeAndCalculateVariables(DriveRampValue);
     BackRight.optimizeAndCalculateVariables(DriveRampValue);
-  }
 
-  public void setSwerveOutputs() {
     // Update Odometry, so the robot knows its position on the field
     ModulePositions = new SwerveModulePosition[] {FrontRight.getPosition(), FrontLeft.getPosition(), BackLeft.getPosition(), BackRight.getPosition()};
     Odometry.update(GyroRotation2d, ModulePositions);
@@ -203,10 +204,20 @@ public class SwerveDrive extends SubsystemBase {
     BackRight.setOutputs(EncoderPosMod);
   }
 
+  /**
+   * Get the robot pose from the Odometry
+   * 
+   * @return The Pose2d of the robot
+   */
   public Pose2d getPose() {
     return Odometry.getPoseMeters();
   }
 
+  /**
+   * Get the robot angle from the Odometry
+   * 
+   * @return The Rotation2d of the robot
+   */
   public Rotation2d getRotation() {
     return GyroRotation2d;
   }
@@ -229,15 +240,13 @@ public class SwerveDrive extends SubsystemBase {
 
     //System.out.println(Odometry.getPoseMeters().getX());
 
-    setVariablesAndOptimize();
-    setSwerveOutputs();
+    optimizeAndSetOutputs();
   }
 
   public void stop() {
     System.out.println("End X:" + Odometry.getPoseMeters().getX());
     System.out.println("End Y:" + Odometry.getPoseMeters().getY());
-    swerveDrive(0.0, 0.0, 0.0, 1.0, 1.0);
-    setVariablesAndOptimize();
-    setSwerveOutputs();
+    calculateSpeedsAndAngles(0.0, 0.0, 0.0, 1.0, 1.0);
+    optimizeAndSetOutputs();
   }
 }
