@@ -73,8 +73,8 @@ public class Autonomous extends SubsystemBase {
     SwerveControllerCommands = new ArrayList<SwerveControllerCommand>();
     AutoStage = 0;
     SwerveControllerCommandIndex = 0;
-    MaxSwerveVel = 4;
-    MaxSwerveAccel = 4;
+    MaxSwerveVel = 3;
+    MaxSwerveAccel = 3;
     timer = new Timer();
   }
 
@@ -201,12 +201,12 @@ public class Autonomous extends SubsystemBase {
       if (AutoOrder.get(AutoStage) == "Grab Cone") {
         System.out.println("Grab Cone");
         Mechanisms.DesiredState = "Grab";
+        Mechanisms.openGrabber();
         if(Mechanisms.isAtDesiredState()) {
           if(timer.get() > 0) { //If we are grabbing the cone, we don't want to open grabber, nor keep moving
-            Mechanisms.openGrabber();
             Track.centerOnCone();
           }
-          if(Track.IntakeTargetOffsetV.getDouble(0) <= -100) {//moved towards cone
+          if(Math.abs(Track.IntakeTargetOffsetV.getDouble(0)) <= 20) {//moved towards cone
             if(timer.get() <= 0.0) {
               Mechanisms.closeGrabber();
               timer.start();
@@ -225,12 +225,12 @@ public class Autonomous extends SubsystemBase {
       if (AutoOrder.get(AutoStage) == "Grab Cube") {
         System.out.println("Grab Cube");
         Mechanisms.DesiredState = "Grab";
+        Mechanisms.openGrabber();
         if(Mechanisms.isAtDesiredState()) {
-          if(timer.get() > 0) { //If we are grabbing the cube, we don't want to open grabber, nor keep moving
-            Mechanisms.openGrabber();
+          if(timer.get() > 0) { //If we are grabbing the cone, we don't want to open grabber, nor keep moving
             Track.centerOnCube();
           }
-          if(Track.IntakeTargetOffsetV.getDouble(0) <= -100) {//moved towards cube
+          if(Math.abs(Track.IntakeTargetOffsetV.getDouble(0)) <= 20) {//moved towards cone
             if(timer.get() <= 0.0) {
               Mechanisms.closeGrabber();
               timer.start();
@@ -248,10 +248,10 @@ public class Autonomous extends SubsystemBase {
     if (AutoStage <= AutoOrder.size() - 1) {
       if (AutoOrder.get(AutoStage) == "Place Cone") {
         System.out.println("Place Cone");
-        Mechanisms.DesiredState = "Place2";
+        Mechanisms.DesiredState = "Place1";
         if(Mechanisms.isAtDesiredState()) {
           Track.centerOnPole();
-          if(Math.abs(Track.ArmTargetOffsetV.getDouble(0)) <= 20) {
+          if(Math.abs(Track.ArmTargetOffsetH.getDouble(0)) <= 20) {
             Mechanisms.openGrabber();
             Mechanisms.DesiredState = "High";
             AutoStage++;
@@ -261,16 +261,14 @@ public class Autonomous extends SubsystemBase {
     }
     if (AutoStage <= AutoOrder.size() - 1) {
       if (AutoOrder.get(AutoStage) == "Place Cube") {
-        if (AutoOrder.get(AutoStage) == "Place Cube") {
-          System.out.println("Place Cube");
-          Mechanisms.DesiredState = "Place2";
-          if(Mechanisms.isAtDesiredState()) {
-            //Track.centerOnPlatform();
-            if(Math.abs(Track.ArmTargetOffsetV.getDouble(0)) <= 20) {
-              Mechanisms.openGrabber();
-              Mechanisms.DesiredState = "High";
-              AutoStage++;
-            }
+        System.out.println("Place Cube");
+        Mechanisms.DesiredState = "Place1";
+        if(Mechanisms.isAtDesiredState()) {
+          Track.centerOnPlatform();
+          if(Math.abs(Track.ArmTargetOffsetH.getDouble(0)) <= 20) {
+            Mechanisms.openGrabber();
+            Mechanisms.DesiredState = "High";
+            AutoStage++;
           }
         }
       }

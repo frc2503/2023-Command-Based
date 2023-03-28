@@ -89,59 +89,59 @@ public class RobotMechanisms extends SubsystemBase {
       if (DesiredState == "Stowed") {
         closeGrabber();
         if (Math.abs(ArmExtend.getEncoder().getPosition()) > .6) {
-          ArmExtendPIDController.setReference(0, ControlType.kSmartMotion);
+          ArmExtendPIDController.setReference(0, ControlType.kPosition);
         }
         else {
-          ArmAnglePIDController.setReference(0, ControlType.kSmartMotion);
-          ArmExtendPIDController.setReference(0, ControlType.kSmartMotion);
+          ArmAnglePIDController.setReference(0, ControlType.kPosition);
+          ArmExtendPIDController.setReference(0, ControlType.kPosition);
         }
       }
 
       if (DesiredState == "Grab") {
-        if (ArmAngle.getEncoder().getPosition() < -6 & ArmExtend.getEncoder().getPosition() < -40) {
-          ArmExtendPIDController.setReference(-39, ControlType.kSmartMotion);
+        if (ArmAngle.getEncoder().getPosition() < -7 & ArmExtend.getEncoder().getPosition() < -40) {
+          ArmExtendPIDController.setReference(-39, ControlType.kPosition);
         }
         else if (ArmAngle.getEncoder().getPosition() > -3 & ArmExtend.getEncoder().getPosition() < -.6) {
-          ArmExtendPIDController.setReference(0, ControlType.kSmartMotion);
+          ArmExtendPIDController.setReference(0, ControlType.kPosition);
         }
         else if (ArmAngle.getEncoder().getPosition() > -4) {
-          ArmAnglePIDController.setReference(-5.5, ControlType.kSmartMotion);
+          ArmAnglePIDController.setReference(-6.5, ControlType.kPosition);
         }
         else {
-          ArmAnglePIDController.setReference(-5.5, ControlType.kSmartMotion);
-          ArmExtendPIDController.setReference(-41, ControlType.kSmartMotion);
+          ArmAnglePIDController.setReference(-6.5, ControlType.kPosition);
+          ArmExtendPIDController.setReference(-41, ControlType.kPosition);
         }
       }
 
       if (DesiredState == "Place1") {
         if (ArmAngle.getEncoder().getPosition() > -6) {
-          ArmAnglePIDController.setReference(-21, ControlType.kSmartMotion);
-          ArmExtendPIDController.setReference(0, ControlType.kSmartMotion);
+          ArmAnglePIDController.setReference(-21, ControlType.kPosition);
+          ArmExtendPIDController.setReference(0, ControlType.kPosition);
         }
         else {
-          ArmAnglePIDController.setReference(-21, ControlType.kSmartMotion);
-          ArmExtendPIDController.setReference(-35, ControlType.kSmartMotion);
+          ArmAnglePIDController.setReference(-21, ControlType.kPosition);
+          ArmExtendPIDController.setReference(-35, ControlType.kPosition);
         }
       }
 
       if (DesiredState == "Place2") {
         if (ArmAngle.getEncoder().getPosition() > -6) {
-          ArmAnglePIDController.setReference(-24, ControlType.kSmartMotion);
-          ArmExtendPIDController.setReference(0, ControlType.kSmartMotion);
+          ArmAnglePIDController.setReference(-24, ControlType.kPosition);
+          ArmExtendPIDController.setReference(0, ControlType.kPosition);
         }
         else {
-          ArmAnglePIDController.setReference(-24, ControlType.kSmartMotion);
-          ArmExtendPIDController.setReference(-85, ControlType.kSmartMotion);
+          ArmAnglePIDController.setReference(-24, ControlType.kPosition);
+          ArmExtendPIDController.setReference(-85, ControlType.kPosition);
         }
       }
       if (DesiredState == "High") {
         if (ArmAngle.getEncoder().getPosition() > -6) {
-          ArmAnglePIDController.setReference(-24, ControlType.kSmartMotion);
-          ArmExtendPIDController.setReference(0, ControlType.kSmartMotion);
+          ArmAnglePIDController.setReference(-24, ControlType.kPosition);
+          ArmExtendPIDController.setReference(0, ControlType.kPosition);
         }
         else {
-          ArmAnglePIDController.setReference(-24, ControlType.kSmartMotion);
-          ArmExtendPIDController.setReference(0, ControlType.kSmartMotion);
+          ArmAnglePIDController.setReference(-24, ControlType.kPosition);
+          ArmExtendPIDController.setReference(0, ControlType.kPosition);
         }
       }
       if (DesiredState == "Charge") {
@@ -152,9 +152,8 @@ public class RobotMechanisms extends SubsystemBase {
           AngleToAdjust = Swerve.Gyro.getPitch();
         }
         System.out.println(AngleToAdjust);
-        Swerve.swerveDrive(0, ChargePIDController.calculate(AngleToAdjust, 0)/300, 0, 1, 1);
-        Swerve.setVariablesAndOptimize();
-        Swerve.setSwerveOutputs();
+        Swerve.calculateSpeedsAndAngles(0, ChargePIDController.calculate(AngleToAdjust, 0)/300, 0, 1, 1);
+        Swerve.optimizeAndSetOutputs();
         System.out.println("Output:" + ChargePIDController.calculate(AngleToAdjust * 20, 0));
       }
     }
@@ -162,24 +161,20 @@ public class RobotMechanisms extends SubsystemBase {
       if (!LimitSwitch.get()) {
         HasBeenZeroed = true;
         ArmExtend.getEncoder().setPosition(0);
-        ArmExtendPIDController.setReference(0, ControlType.kSmartMotion);
+        ArmExtendPIDController.setReference(0, ControlType.kPosition);
       }
       else {
         ArmExtend.set(.2);
       }
-    }
-
-    if (!LimitSwitch.get()) {
-      ArmExtend.getEncoder().setPosition(0);
-    }
+    } 
   }
 
   public boolean isAtDesiredState() {
-    if(DesiredState == "Stowed" & ArmAngle.getEncoder().getPosition() >= -1 & ArmExtend.getEncoder().getPosition() <= 1) return true;
-    if(DesiredState == "Grab" & Math.abs(ArmAngle.getEncoder().getPosition() + 6) <= 1 & Math.abs(ArmExtend.getEncoder().getPosition() - 39) <= 1) return true;
-    if(DesiredState == "Place1" & Math.abs(ArmAngle.getEncoder().getPosition() + 23) <= 1 & Math.abs(ArmExtend.getEncoder().getPosition() - 43.5) <= 1) return true;
-    if(DesiredState == "Place2" & Math.abs(ArmAngle.getEncoder().getPosition() + 23) <= 1 & Math.abs(ArmExtend.getEncoder().getPosition() - 56) <= 1) return true;
-    if(DesiredState == "High" & ArmAngle.getEncoder().getPosition() <= -25 & ArmExtend.getEncoder().getPosition() >= 56) return true;
+    if(DesiredState == "Stowed" & Math.abs(ArmExtend.getEncoder().getPosition()) <= .6 & Math.abs(ArmExtend.getEncoder().getPosition()) <= 1) return true;
+    if(DesiredState == "Grab" & Math.abs(Math.abs(ArmAngle.getEncoder().getPosition()) - 6.5) <= 1 & Math.abs(Math.abs(ArmExtend.getEncoder().getPosition()) - 41) <= 1) return true;
+    if(DesiredState == "Place1" & Math.abs(Math.abs(ArmAngle.getEncoder().getPosition()) - 19) <= 1 & Math.abs(Math.abs(ArmExtend.getEncoder().getPosition()) - 35) <= 1) return true;
+    if(DesiredState == "Place2" & Math.abs(Math.abs(ArmAngle.getEncoder().getPosition()) - 21) <= 1 & Math.abs(Math.abs(ArmExtend.getEncoder().getPosition()) - 85) <= 1) return true;
+    if(DesiredState == "High" & Math.abs(Math.abs(ArmAngle.getEncoder().getPosition()) - 21) <= 1 & Math.abs(Math.abs(ArmExtend.getEncoder().getPosition())) <= 1) return true;
     else return false;
   }
 
@@ -187,10 +182,14 @@ public class RobotMechanisms extends SubsystemBase {
     Grabber.toggle();
   }
   public void closeGrabber() {
-    Grabber.set(Value.kForward);
+    if (Grabber.get() != Value.kForward) {
+      Grabber.set(Value.kForward);
+    }
   }
   public void openGrabber() {
-    Grabber.set(Value.kReverse);
+    if (Grabber.get() != Value.kReverse) {
+      Grabber.set(Value.kReverse);
+    }
   }
   public void extendLimelight() {
     LimelightPiston.set(Value.kReverse);
