@@ -46,6 +46,7 @@ public class Robot extends TimedRobot {
   private double[] MotorCurrents;
   private String[] AutoNames;
   private String PrevAuto;
+  private boolean ManualArmRead;
 
   public SwerveDrive SwerveDrive;
   public RobotMechanisms RobotMechanisms;
@@ -57,11 +58,11 @@ public class Robot extends TimedRobot {
   public NetworkTableEntry GyroAng;
   public SendableChooser<String> AutoChooser;
   private ShuffleboardTab LiveWindow;
+
   private SimpleWidget FFGain;
   private SimpleWidget PGain;
   private SimpleWidget IGain;
   private SimpleWidget DGain;
-  private boolean ManualArmRead;
 
   @Override
   public void robotInit() {
@@ -96,9 +97,6 @@ public class Robot extends TimedRobot {
     SwerveDrive.GyroRotation2d = SwerveDrive.Gyro.getRotation2d();
 
     // Call SwerveDrive methods, their descriptions are in the SwerveDrive.java file
-    SwerveDrive.initMotorControllers(1, 5, 2, 6, 3, 7, 4, 8);
-    SwerveDrive.setPID(0.000175, 0.00001, 0.0000004, 0.0, 8.0, 0.01, 0.01);
-    SwerveDrive.initKinematicsAndOdometry();
     PrevAuto = AutoChooser.getSelected();
     Autonomous.AutoFile = AutoChooser.getSelected();
     SwerveDrive.AutoName = AutoChooser.getSelected();
@@ -145,8 +143,6 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
     SwerveDrive.GyroRotation2d = SwerveDrive.Gyro.getRotation2d().unaryMinus();
 
-    SwerveDrive.FrontLeft.DriveEncoder.getVelocity();
-
     // Assign stick inputs to variables, to prevent discrepancies
     RightStickX = RightStick.getX();
     RightStickY = RightStick.getY();
@@ -168,7 +164,7 @@ public class Robot extends TimedRobot {
     }
     else if (RobotMechanisms.DesiredState != "Charge") {
       // Call swerveDrive() method, to do all the math and outputs for swerve drive
-      SwerveDrive.calculateSpeedsAndAngles(Math.pow(RightStickX, 3) * 3, (Math.pow(RightStickY, 3) * -3), (Math.pow(RightStickTwist, 3) * 3), (1 - ((RightStick.getZ() + 1) / 2)), (1 - ((LeftStick.getZ() + 1) / 2)));
+      SwerveDrive.calculateSpeedsAndAngles(Math.copySign(Math.pow(RightStickX, 2.0), RightStickX) * 3, (-Math.copySign(Math.pow(RightStickY, 2.0), RightStickY) * 3), (Math.copySign(Math.pow(RightStickTwist, 2.0), RightStickTwist) * 3), (1 - ((RightStick.getZ() + 1) / 2)), (1 - ((LeftStick.getZ() + 1) / 2)));
       SwerveDrive.optimizeAndSetOutputs();
     }
 

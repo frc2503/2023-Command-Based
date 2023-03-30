@@ -16,6 +16,9 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+
+import javax.swing.plaf.synth.SynthScrollBarUI;
+
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
@@ -64,7 +67,7 @@ public class Wheel extends SubsystemBase {
 	 * Define what the objects "SteerEncoder" and "SteerPIDController" refer to, and initialize them
 	 */
   public void initEncodersAndPIDControllers() {
-    // Make the steer motors not move when there isn't an input
+    // Make the steer motors prevent movement when there isn't an input
     Steer.setNeutralMode(NeutralMode.Brake);
 
     Steer.configClosedloopRamp(0);
@@ -100,6 +103,8 @@ public class Wheel extends SubsystemBase {
 	 *            Drive Integral value
    * @param DD
 	 *            Drive Derivative value
+   * @param SFF
+	 *            Steer Feed Forward value
    * @param SP
 	 *            Steer Proportional value
    * @param SI
@@ -107,11 +112,12 @@ public class Wheel extends SubsystemBase {
    * @param SD
 	 *            Steer Derivative value
    */
-  public void setPIDValues(Double DFF, Double DP, Double DI, Double DD, Double SP, Double SI, Double SD) {
+  public void setPIDValues(double DFF, double DP, double DI, double DD, double SFF, double SP, double SI, double SD) {
     DrivePIDController.setFF(DFF);
     DrivePIDController.setP(DP);
     DrivePIDController.setI(DI);
     DrivePIDController.setD(DD);
+    Steer.config_kF(0, SFF);
     Steer.config_kP(0, SP);
     Steer.config_kI(0, SI);
     Steer.config_kD(0, SD);
@@ -148,7 +154,7 @@ public class Wheel extends SubsystemBase {
    * @param DriveRampValue
 	 *            Amount the drive speed can increase or decrease by, max value of 2, min value of 0
    */
-  public void optimizeAndCalculateVariables(double DriveRampValue) {
+  public void optimizeAndCalculateVariables() {
     // Optimize rotation positions, so the wheels don't turn 180 degrees rather than just spinning the drive motor backwards
     // Determine if the distance between the desired angle and the current angle is less than or equal to 90
     // This is to determine whether the drive motors should be driven forward or backward.
@@ -209,6 +215,7 @@ public class Wheel extends SubsystemBase {
 
     // Tell the drive motor to drive the wheels at the correct speed
     DrivePIDController.setReference((((ModuleState.speedMetersPerSecond / ((4 / 39.37) * Math.PI)) * 60) / .15), ControlType.kVelocity);
+    System.out.println(ModuleState.speedMetersPerSecond);
   }
 
   public SwerveModulePosition getPosition() {

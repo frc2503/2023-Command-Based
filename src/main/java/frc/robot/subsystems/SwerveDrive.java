@@ -4,6 +4,7 @@
 
 package frc.robot.subsystems;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import edu.wpi.first.wpilibj.SerialPort;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -21,6 +22,7 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import java.security.PublicKey;
 
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+import frc.robot.Constants.*;
 
 /**
 Class to hold all code for the swerve drive
@@ -35,7 +37,6 @@ public class SwerveDrive extends SubsystemBase {
   public SwerveDriveOdometry Odometry;
 
   public double EncoderPosMod;
-  private double DriveRampValue;
 
   private ChassisSpeeds Speeds;
   private SwerveModuleState[] ModuleStates;
@@ -67,14 +68,28 @@ public class SwerveDrive extends SubsystemBase {
     Gyro = new AHRS(SerialPort.Port.kMXP);
     Gyro.calibrate();
     Gyro.reset();
+    GyroRotation2d = Gyro.getRotation2d();
+
+    FrontRight.Drive = new CANSparkMax(Constants.FrontRightDriveCANID, MotorType.kBrushless);
+    FrontRight.Steer = new TalonSRX(Constants.FrontRightSteerCANID);
+    FrontLeft.Drive = new CANSparkMax(Constants.FrontLeftDriveCANID, MotorType.kBrushless);
+    FrontLeft.Steer = new TalonSRX(Constants.FrontLeftSteerCANID);
+    BackRight.Drive = new CANSparkMax(Constants.BackRightDriveCANID, MotorType.kBrushless);
+    BackRight.Steer = new TalonSRX(Constants.BackRightSteerCANID);
+    BackLeft.Drive = new CANSparkMax(Constants.BackLeftDriveCANID, MotorType.kBrushless);
+    BackLeft.Steer = new TalonSRX(Constants.BackLeftSteerCANID);
     
+    FrontRight.initEncodersAndPIDControllers();
+    FrontLeft.initEncodersAndPIDControllers();
+    BackLeft.initEncodersAndPIDControllers();
+    BackRight.initEncodersAndPIDControllers();
+
+    updatePID(Constants.DriveFeedForward, Constants.DriveProportional, Constants.DriveIntegral, Constants.DriveDerivative, Constants.SteerFeedForward, Constants.SteerProportional, Constants.SteerIntegral, Constants.SteerDerivative);
+    initKinematicsAndOdometry();
+
     // The value output by the encoders when at one full rotation
     // Used to get all angle values to the same scale for calculations
     EncoderPosMod = 1024;
-
-    // Amount the drive speed can increase or decrease by, max value of 1, min value of 0
-    // Purposefully set very low because of how quickly the code runs
-    DriveRampValue = .05;
 
     // We usually want this enabled, but toggling this off will treat the camera angle as "forward"
     FieldOrientedSwerveEnabled = true;
@@ -137,6 +152,8 @@ public class SwerveDrive extends SubsystemBase {
 	 *            Drive Integral value
    * @param DD
 	 *            Drive Derivative value
+   * @param SFF
+	 *            Steer Feed Forward value
    * @param SP
 	 *            Steer Proportional value
    * @param SI
@@ -144,11 +161,11 @@ public class SwerveDrive extends SubsystemBase {
    * @param SD
 	 *            Steer Derivative value
    */
-  public void setPID(double DFF, double DP, double DI, double DD, double SP, double SI, double SD) {
-    FrontRight.setPIDValues(DFF, DP, DI, DD, SP, SI, SD);
-    FrontLeft.setPIDValues(DFF, DP, DI, DD, SP, SI, SD);
-    BackLeft.setPIDValues(DFF, DP, DI, DD, SP, SI, SD);
-    BackRight.setPIDValues(DFF, DP, DI, DD, SP, SI, SD);
+  public void updatePID(double DFF, double DP, double DI, double DD, double SFF, double SP, double SI, double SD) {
+    FrontRight.setPIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
+    FrontLeft.setPIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
+    BackLeft.setPIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
+    BackRight.setPIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
   }
 
   /**
@@ -200,10 +217,10 @@ public class SwerveDrive extends SubsystemBase {
     BackRight.setEncoderVariables(EncoderPosMod);
     
     // Do math for swerve drive that is identical between all wheel modules, and then send the angle and speed to the wheels
-    FrontRight.optimizeAndCalculateVariables(DriveRampValue);
-    FrontLeft.optimizeAndCalculateVariables(DriveRampValue);
-    BackLeft.optimizeAndCalculateVariables(DriveRampValue);
-    BackRight.optimizeAndCalculateVariables(DriveRampValue);
+    FrontRight.optimizeAndCalculateVariables();
+    FrontLeft.optimizeAndCalculateVariables();
+    BackLeft.optimizeAndCalculateVariables();
+    BackRight.optimizeAndCalculateVariables();
 
     // Update Odometry, so the robot knows its position on the field
     ModulePositions = new SwerveModulePosition[] {FrontRight.getPosition(), FrontLeft.getPosition(), BackLeft.getPosition(), BackRight.getPosition()};
