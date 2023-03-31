@@ -23,7 +23,7 @@ import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 
 /**
 Class to hold all code for the swerve drive
-Mostly exists to prevent people from accidentally messing the code up
+Mostly exists to reduce verbosity in Robot.java, but it also helps prevent people from accidentally messing the code up
 */
 public class SwerveDrive extends SubsystemBase {
   // Define all objects and varibles used by this class
