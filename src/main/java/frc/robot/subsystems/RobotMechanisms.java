@@ -17,16 +17,15 @@ import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
-import edu.wpi.first.wpilibj2.command.PIDCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class RobotMechanisms extends SubsystemBase {
   private SwerveDrive Swerve;
   
   public CANSparkMax ArmAngle;
-  private SparkMaxPIDController ArmAnglePIDController;
+  public SparkMaxPIDController ArmAnglePIDController;
   public CANSparkMax ArmExtend;
-  private SparkMaxPIDController ArmExtendPIDController;
+  public SparkMaxPIDController ArmExtendPIDController;
 
   private Constraints ChargeConstraints;
   private ProfiledPIDController ChargePIDController;

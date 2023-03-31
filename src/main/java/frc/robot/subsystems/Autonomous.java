@@ -17,14 +17,19 @@ import edu.wpi.first.math.trajectory.TrajectoryGenerator;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.constraint.SwerveDriveKinematicsConstraint;
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+
+import frc.robot.Constants;
 
 import java.io.*;
 
@@ -32,7 +37,10 @@ public class Autonomous extends SubsystemBase {
   private Tracking Track;
   private SwerveDrive Swerve;
   private RobotMechanisms Mechanisms;
-  public String AutoFile;
+  private TrajectoryLoader TrajectoryLoader;
+  private SendableChooser<String> AutoChooser;
+  private String[] AutoNames;
+  private String AutoFile;
   private File TrajFile;
   private TrajectoryConfig TrajConfig;
   private Trajectory Trajectory;
@@ -42,19 +50,50 @@ public class Autonomous extends SubsystemBase {
   private List<String> Lines;
   private List<String> CurrentLine;
   private List<String> FileOrder;
-  public List<String> AutoOrder;
+  private List<String> AutoOrder;
   private List<Translation2d> Translation2ds;
   private List<Rotation2d> Rotation2ds;
   private List<Pose2d> Pose2ds;
   private List<Translation2d> MiddlePoints;
-  public List<SwerveControllerCommand> SwerveControllerCommands;
-  public Integer AutoStage;
+  private List<SwerveControllerCommand> SwerveControllerCommands;
+  private Integer AutoStage;
   private Integer StartIndex;
-  public Integer SwerveControllerCommandIndex;
-  public Boolean IsScheduled = false;
-  private double MaxSwerveVel;
-  private double MaxSwerveAccel;
-  public Timer timer;
+  private Integer SwerveControllerCommandIndex;
+  private Boolean IsScheduled = false;
+  public Timer Timer;
+
+  public class TrajectoryLoader extends CommandBase {
+    private String PrevAuto;
+
+    @Override
+    public void initialize() {
+      // Load default autonomous file
+      PrevAuto = AutoChooser.getSelected();
+      AutoFile = AutoChooser.getSelected();
+      if (AutoChooser.getSelected() != null) {
+        System.out.println(AutoFile);
+        try {
+          initTrajectory();
+        } catch (FileNotFoundException e) {
+          System.out.println("AUTO NOT FOUND");
+        }
+      }
+    }
+  
+    @Override
+    public void execute() {
+      if (PrevAuto != AutoChooser.getSelected()) {
+        AutoFile = AutoChooser.getSelected();
+        System.out.println(AutoFile);
+        try {
+          initTrajectory();
+        } catch (FileNotFoundException e) {
+          System.out.println("AUTO NOT FOUND");
+        }
+        PrevAuto = AutoChooser.getSelected();
+      }
+    }
+  }
 
   public Autonomous(SwerveDrive SwerveDrive, Tracking Tracking, RobotMechanisms RobotMechanisms) {
     Swerve = SwerveDrive;
@@ -71,17 +110,26 @@ public class Autonomous extends SubsystemBase {
     SwerveControllerCommands = new ArrayList<SwerveControllerCommand>();
     AutoStage = 0;
     SwerveControllerCommandIndex = 0;
-    MaxSwerveVel = 3;
-    MaxSwerveAccel = 3;
-    timer = new Timer();
+    Timer = new Timer();
+
+    AutoChooser = new SendableChooser<String>();
+    AutoNames = Filesystem.getDeployDirectory().toPath().resolve("output/paths").toFile().list();
+    for (Integer Index = 0; Index <= AutoNames.length - 1; Index++) {
+      AutoChooser.addOption(AutoNames[Index], AutoNames[Index]);
+    }
+    AutoChooser.setDefaultOption("BlueTest", "BlueTest");
+    SmartDashboard.putData("AutoChooser", AutoChooser);
+
+    TrajectoryLoader = new TrajectoryLoader();
+    TrajectoryLoader.schedule();
   }
 
   public void initTrajectory() throws FileNotFoundException {
     TrajFile = Filesystem.getDeployDirectory().toPath().resolve("output/paths/" + AutoFile).toFile();
     AutoReader = new Scanner(TrajFile);
-    SwerveDriveMaxSpeed = new SwerveDriveKinematicsConstraint(Swerve.Kinematics, MaxSwerveVel);
-    PIDConstraints = new Constraints(MaxSwerveVel, MaxSwerveAccel);
-    TrajConfig = new TrajectoryConfig(MaxSwerveVel, MaxSwerveAccel).setKinematics(Swerve.Kinematics).addConstraint(SwerveDriveMaxSpeed);
+    SwerveDriveMaxSpeed = new SwerveDriveKinematicsConstraint(Swerve.Kinematics, Constants.SwerveMaxVelocity);
+    PIDConstraints = new Constraints(Constants.SwerveMaxVelocity, Constants.SwerveMaxAcceleration);
+    TrajConfig = new TrajectoryConfig(Constants.SwerveMaxVelocity, Constants.SwerveMaxAcceleration).setKinematics(Swerve.Kinematics).addConstraint(SwerveDriveMaxSpeed);
     Lines.clear();
     CurrentLine.clear();
     Translation2ds.clear();
@@ -198,19 +246,19 @@ public class Autonomous extends SubsystemBase {
         Mechanisms.DesiredState = "Grab";
         Mechanisms.openGrabber();
         if(Mechanisms.isAtDesiredState()) {
-          if(timer.get() > 0) { //If we are grabbing the cone, we don't want to open grabber, nor keep moving
+          if(Timer.get() > 0) { //If we are grabbing the cone, we don't want to open grabber, nor keep moving
             Track.centerOnCone();
           }
           if(Math.abs(Track.IntakeTargetOffsetV.getDouble(0)) <= 20) {//moved towards cone
-            if(timer.get() <= 0.0) {
+            if(Timer.get() <= 0.0) {
               Mechanisms.closeGrabber();
-              timer.start();
+              Timer.start();
             }
-            if(timer.get() >= 0.1) { //waited for grabber to close
+            if(Timer.get() >= 0.1) { //waited for grabber to close
               Mechanisms.DesiredState = "High";
               AutoStage++;
-              timer.stop();
-              timer.reset();
+              Timer.stop();
+              Timer.reset();
             }
           }
         }
@@ -222,19 +270,19 @@ public class Autonomous extends SubsystemBase {
         Mechanisms.DesiredState = "Grab";
         Mechanisms.openGrabber();
         if(Mechanisms.isAtDesiredState()) {
-          if(timer.get() > 0) { //If we are grabbing the cone, we don't want to open grabber, nor keep moving
+          if(Timer.get() > 0) { //If we are grabbing the cone, we don't want to open grabber, nor keep moving
             Track.centerOnCube();
           }
           if(Math.abs(Track.IntakeTargetOffsetV.getDouble(0)) <= 20) {//moved towards cone
-            if(timer.get() <= 0.0) {
+            if(Timer.get() <= 0.0) {
               Mechanisms.closeGrabber();
-              timer.start();
+              Timer.start();
             }
-            if(timer.get() >= 0.1) { //waited for grabber to close
+            if(Timer.get() >= 0.1) { //waited for grabber to close
               Mechanisms.DesiredState = "High";
               AutoStage++;
-              timer.stop();
-              timer.reset();
+              Timer.stop();
+              Timer.reset();
             }
           }
         }
@@ -246,27 +294,27 @@ public class Autonomous extends SubsystemBase {
         Mechanisms.DesiredState = "Place1";
         System.out.println("Arm Angle: " + Mechanisms.ArmAngle.getEncoder().getPosition());
         if(Mechanisms.isAtDesiredState()) {
-          if(timer.get() <= 0.0) {
+          if(Timer.get() <= 0.0) {
             Mechanisms.openGrabber();
-            timer.start();
+            Timer.start();
           }
-          if(timer.get() >= 0.2) { //wait for grabber to open
+          if(Timer.get() >= 0.2) { //wait for grabber to open
             Mechanisms.DesiredState = "Grab";
             AutoStage++;
-            timer.stop();
-            timer.reset();
+            Timer.stop();
+            Timer.reset();
           }
           // Track.centerOnPole();
           // if(Math.abs(Track.ArmTargetOffsetH.getDouble(0)) <= 20) {
-          //   if(timer.get() <= 0.0) {
+          //   if(Timer.get() <= 0.0) {
           //     Mechanisms.openGrabber();
-          //     timer.start();
+          //     Timer.start();
           //   }
-          //   if(timer.get() >= 0.2) { //waited for grabber to open
+          //   if(Timer.get() >= 0.2) { //waited for grabber to open
           //     Mechanisms.DesiredState = "Stowed";
           //     AutoStage++;
-          //     timer.stop();
-          //     timer.reset();
+          //     Timer.stop();
+          //     Timer.reset();
           //   }
         }
       }

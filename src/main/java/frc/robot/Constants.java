@@ -37,4 +37,13 @@ public final class Constants {
     public static double SteerProportional = 8;
     public static double SteerIntegral = 0.01;
     public static double SteerDerivative = 0.01;
+
+    // Number outputted by the steer encoders after 1 revolution
+    public static int SteerEncoderCountsPerRevolution = 1024;
+
+    // Swerve drive maximum velocity in m/s
+    public static double SwerveMaxVelocity = 3;
+
+    // Swerve drive maximum acceleration in m/s²
+    public static double SwerveMaxAcceleration = 3;
 }

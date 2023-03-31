@@ -17,11 +17,11 @@ import com.revrobotics.SparkMaxPIDController;
 
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 
-import javax.swing.plaf.synth.SynthScrollBarUI;
-
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
+
+import frc.robot.Constants;
 
 // This class defines objects and variables for each wheel module
 public class Wheel extends SubsystemBase {
@@ -74,6 +74,8 @@ public class Wheel extends SubsystemBase {
 
     // Tell the Steer motor controller that an encoder exists, and what kind it is
     Steer.configSelectedFeedbackSensor(FeedbackDevice.Analog);
+
+    Steer.configSelectedFeedbackCoefficient(1 / Constants.SteerEncoderCountsPerRevolution);
 
     // Define what encoder the object "DriveEncoder" refers to
     DriveEncoder = Drive.getEncoder(SparkMaxRelativeEncoder.Type.kHallSensor, 42);
@@ -129,9 +131,9 @@ public class Wheel extends SubsystemBase {
    * @param EncoderPosMod
 	 *            The value output by the encoders when at one full rotation
    */
-  public void setEncoderVariables(double EncoderPosMod) {
-    // Convert the raw encoder output into a unit of rotations
-    SteerAngRot = (Steer.getSelectedSensorPosition() / EncoderPosMod);
+  public void setEncoderVariables() {
+    // Store position of the steer encoder to prevent discrepancies
+    SteerAngRot = Steer.getSelectedSensorPosition();
 
     // Get the number of full rotations the wheel has gone through
     SteerFullRot = Math.floor(SteerAngRot);
@@ -201,14 +203,14 @@ public class Wheel extends SubsystemBase {
     }
   }
 
-  public void setOutputs(double EncoderPosMod) {
+  public void setOutputs() {
     // Tell the steer motor to turn the wheel to the correct position
     // An issue is created by ramping which this if statement solves, I will explain the root of the problem, and the solution here:
     // If all inputs for robot speeds are 0, the angle for the wheel will default to 0
     // This causes a problem because the drive wheel speed does not instantly go to zero, causing the robot's direction to change
     // This if statement fixes this issue by only changing the angle of the wheel if and only if any of the desired robot speeds are greater than 0
     if (IsInput == true) {
-      Steer.set(ControlMode.Position, ((ModuleState.angle.getDegrees() / 360.0) * EncoderPosMod));
+      Steer.set(ControlMode.Position, (ModuleState.angle.getDegrees() / 360.0));
     }
 
     //Steer.set(ControlMode.Position, 0);

@@ -19,10 +19,7 @@ import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
-import java.security.PublicKey;
-
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
-import frc.robot.Constants.*;
 
 /**
 Class to hold all code for the swerve drive
@@ -36,13 +33,9 @@ public class SwerveDrive extends SubsystemBase {
   public SwerveDriveKinematics Kinematics;
   public SwerveDriveOdometry Odometry;
 
-  public double EncoderPosMod;
-
   private ChassisSpeeds Speeds;
   private SwerveModuleState[] ModuleStates;
   public SwerveModulePosition[] ModulePositions;
-
-  public String AutoName;
   
   public Wheel FrontRight;
   public Wheel FrontLeft;
@@ -86,10 +79,6 @@ public class SwerveDrive extends SubsystemBase {
 
     updatePID(Constants.DriveFeedForward, Constants.DriveProportional, Constants.DriveIntegral, Constants.DriveDerivative, Constants.SteerFeedForward, Constants.SteerProportional, Constants.SteerIntegral, Constants.SteerDerivative);
     initKinematicsAndOdometry();
-
-    // The value output by the encoders when at one full rotation
-    // Used to get all angle values to the same scale for calculations
-    EncoderPosMod = 1024;
 
     // We usually want this enabled, but toggling this off will treat the camera angle as "forward"
     FieldOrientedSwerveEnabled = true;
@@ -211,10 +200,10 @@ public class SwerveDrive extends SubsystemBase {
    */
   public void optimizeAndSetOutputs() {
     // Do math to get multiple variables out of the encoder position
-    FrontLeft.setEncoderVariables(EncoderPosMod);
-    FrontRight.setEncoderVariables(EncoderPosMod);
-    BackLeft.setEncoderVariables(EncoderPosMod);
-    BackRight.setEncoderVariables(EncoderPosMod);
+    FrontLeft.setEncoderVariables();
+    FrontRight.setEncoderVariables();
+    BackLeft.setEncoderVariables();
+    BackRight.setEncoderVariables();
     
     // Do math for swerve drive that is identical between all wheel modules, and then send the angle and speed to the wheels
     FrontRight.optimizeAndCalculateVariables();
@@ -232,10 +221,10 @@ public class SwerveDrive extends SubsystemBase {
       Odometry.update(new Rotation2d(0), ModulePositions);
     }
 
-    FrontRight.setOutputs(EncoderPosMod);
-    FrontLeft.setOutputs(EncoderPosMod);
-    BackLeft.setOutputs(EncoderPosMod);
-    BackRight.setOutputs(EncoderPosMod);
+    FrontRight.setOutputs();
+    FrontLeft.setOutputs();
+    BackLeft.setOutputs();
+    BackRight.setOutputs();
   }
 
   /**
