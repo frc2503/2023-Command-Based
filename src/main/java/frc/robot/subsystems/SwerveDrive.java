@@ -78,13 +78,8 @@ public class SwerveDrive extends SubsystemBase {
     BackRight.initEncodersAndPIDControllers();
 
     updatePID(Constants.DriveFeedForward, Constants.DriveProportional, Constants.DriveIntegral, Constants.DriveDerivative, Constants.SteerFeedForward, Constants.SteerProportional, Constants.SteerIntegral, Constants.SteerDerivative);
-    initKinematicsAndOdometry();
-
-    // We usually want this enabled, but toggling this off will treat the camera angle as "forward"
-    FieldOrientedSwerveEnabled = true;
-  }
-
-  public void initKinematicsAndOdometry() {
+    
+    // Pass in the reported positions from each module, to prevent any weird offsets
     ModulePositions = new SwerveModulePosition[] {FrontRight.getPosition(), FrontLeft.getPosition(), BackLeft.getPosition(), BackRight.getPosition()};
     
     // Pass in locations of wheels relative to the center of the robot
@@ -93,7 +88,11 @@ public class SwerveDrive extends SubsystemBase {
     
     // Pass in wheel module locations, as well as initial robot angle and position for field oriented drive
     Odometry = new SwerveDriveOdometry(Kinematics, GyroRotation2d, ModulePositions, new Pose2d(0, 0, new Rotation2d()));
+
+    // We usually want this enabled, but toggling this off will treat the camera angle as "forward"
+    FieldOrientedSwerveEnabled = true;
   }
+
   /**
 	 * Assign motor controllers their CAN numbers, and call the initEncodersAndPIDControllers() method for each wheel module
 	 *
