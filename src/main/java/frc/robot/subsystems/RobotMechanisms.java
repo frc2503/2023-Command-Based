@@ -18,33 +18,33 @@ import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.SwerveSubsystem.SwerveDrive;
 
 public class RobotMechanisms extends SubsystemBase {
-  private SwerveDrive Swerve;
-  
-  public CANSparkMax ArmAngle;
-  public SparkMaxPIDController ArmAnglePIDController;
-  public CANSparkMax ArmExtend;
-  public SparkMaxPIDController ArmExtendPIDController;
+  public static CANSparkMax ArmAngle;
+  public static SparkMaxPIDController ArmAnglePIDController;
+  public static CANSparkMax ArmExtend;
+  public static SparkMaxPIDController ArmExtendPIDController;
 
-  private Constraints ChargeConstraints;
-  private ProfiledPIDController ChargePIDController;
+  private static Constraints ChargeConstraints;
+  private static ProfiledPIDController ChargePIDController;
 
-  private Compressor Pump;
-  private DoubleSolenoid Grabber;
-  private DoubleSolenoid LimelightPiston;
+  private static Compressor Pump;
+  private static DoubleSolenoid Grabber;
+  private static DoubleSolenoid LimelightPiston;
 
-  private DigitalInput LimitSwitch;
-  private boolean HasBeenZeroed;
+  private static DigitalInput LimitSwitch;
+  private static boolean HasBeenZeroed;
 
-  public String DesiredState;
-  private double AngleToAdjust;
-  public double ArmAngleMod;
-  public double ArmExtendMod;
+  public static String DesiredState;
+  private static double AngleToAdjust;
+  public static double ArmAngleMod;
+  public static double ArmExtendMod;
 
-  public RobotMechanisms(SwerveDrive SwerveDrive) {
-    Swerve = SwerveDrive;
+  public RobotMechanisms() {
+  }
 
+  public static void init() {
     DesiredState = "";
 
     ArmAngleMod = 0;
@@ -88,7 +88,7 @@ public class RobotMechanisms extends SubsystemBase {
     HasBeenZeroed = false;
   }
 
-  public void goToDesiredState() {   
+  public static void goToDesiredState() {   
     if (HasBeenZeroed) {
       if (DesiredState.equals("Stowed")) {
         closeGrabber();
@@ -150,15 +150,15 @@ public class RobotMechanisms extends SubsystemBase {
         }
       }
       if (DesiredState.equals("Charge")) {
-        if (Math.abs(Swerve.Gyro.getRoll()) > Math.abs(Swerve.Gyro.getPitch())) {
-          AngleToAdjust = Swerve.Gyro.getRoll();
+        if (Math.abs(SwerveDrive.Gyro.getRoll()) > Math.abs(SwerveDrive.Gyro.getPitch())) {
+          AngleToAdjust = SwerveDrive.Gyro.getRoll();
         }
         else {
-          AngleToAdjust = Swerve.Gyro.getPitch();
+          AngleToAdjust = SwerveDrive.Gyro.getPitch();
         }
         System.out.println(AngleToAdjust);
-        Swerve.calculateSpeedsAndAngles(0, ChargePIDController.calculate(AngleToAdjust, 0)/300, 0, 1, 1);
-        Swerve.optimizeAndSetOutputs();
+        SwerveDrive.calculateSpeedsAndAngles(0, ChargePIDController.calculate(AngleToAdjust, 0)/300, 0, 1, 1);
+        SwerveDrive.optimizeAndSetOutputs();
         System.out.println("Output:" + ChargePIDController.calculate(AngleToAdjust * 20, 0));
       }
     }
@@ -174,7 +174,7 @@ public class RobotMechanisms extends SubsystemBase {
     } 
   }
 
-  public boolean isAtDesiredState() {
+  public static boolean isAtDesiredState() {
     if(DesiredState == "Stowed" & Math.abs(ArmExtend.getEncoder().getPosition()) <= .6 & Math.abs(ArmExtend.getEncoder().getPosition()) <= 1) return true;
     if(DesiredState == "Grab" & Math.abs(Math.abs(ArmAngle.getEncoder().getPosition()) - 6.5) <= 1 & Math.abs(Math.abs(ArmExtend.getEncoder().getPosition()) - 41) <= 1) return true;
     if(DesiredState == "Place1" & Math.abs(Math.abs(ArmAngle.getEncoder().getPosition()) - 17) <= 1 & Math.abs(Math.abs(ArmExtend.getEncoder().getPosition()) - 37) <= 1) return true;
@@ -183,27 +183,27 @@ public class RobotMechanisms extends SubsystemBase {
     else return false;
   }
 
-  public void grabObject() {
+  public static void grabObject() {
     Grabber.toggle();
   }
-  public void closeGrabber() {
+  public static void closeGrabber() {
     if (Grabber.get() != Value.kForward) {
       Grabber.set(Value.kForward);
     }
   }
-  public void openGrabber() {
+  public static void openGrabber() {
     if (Grabber.get() != Value.kReverse) {
       Grabber.set(Value.kReverse);
     }
   }
-  public void extendLimelight() {
+  public static void extendLimelight() {
     LimelightPiston.set(Value.kReverse);
   }
-  public void retractLimelight() {
+  public static void retractLimelight() {
     LimelightPiston.set(Value.kForward);
   }
 
-  public void reset() {
-    Swerve.Gyro.reset();
+  public static void reset() {
+    SwerveDrive.Gyro.reset();
   }
 }

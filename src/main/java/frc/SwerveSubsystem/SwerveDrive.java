@@ -2,7 +2,7 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package frc.robot.subsystems;
+package frc.SwerveSubsystem;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import edu.wpi.first.wpilibj.SerialPort;
@@ -27,27 +27,30 @@ Mostly exists to reduce verbosity in Robot.java, but it also helps prevent peopl
 */
 public class SwerveDrive extends SubsystemBase {
   // Define all objects and varibles used by this class
-  public AHRS Gyro;
-  public Rotation2d GyroRotation2d;
+  public static AHRS Gyro;
+  public static Rotation2d GyroRotation2d;
 
-  public SwerveDriveKinematics Kinematics;
-  public SwerveDriveOdometry Odometry;
+  public static SwerveDriveKinematics Kinematics;
+  public static SwerveDriveOdometry Odometry;
 
-  private ChassisSpeeds Speeds;
-  private SwerveModuleState[] ModuleStates;
-  public SwerveModulePosition[] ModulePositions;
+  private static ChassisSpeeds Speeds;
+  private static SwerveModuleState[] ModuleStates;
+  public static SwerveModulePosition[] ModulePositions;
   
-  public Wheel FrontRight;
-  public Wheel FrontLeft;
-  public Wheel BackLeft;
-  public Wheel BackRight;
+  public static Wheel FrontRight;
+  public static Wheel FrontLeft;
+  public static Wheel BackLeft;
+  public static Wheel BackRight;
 
-  public boolean FieldOrientedSwerveEnabled;
+  public static boolean FieldOrientedSwerveEnabled;
 
   /**
    * SwerveDrive class constructor, initializes all variables, objects, and methods for the created SwerveDrive object
    */
   public SwerveDrive() {
+  }
+
+  public static void init() {
     // Create objects for the Wheel class, and define locations of wheel modules compared to robot center, which doesn't really matter unless base is MUCH longer on one side
     FrontRight = new Wheel(0.2604, -0.2786);
     FrontLeft = new Wheel(0.2604, 0.2786);
@@ -113,7 +116,7 @@ public class SwerveDrive extends SubsystemBase {
    * @param BRS
 	 *            CAN number of the back right steer motor controller
 	 */
-  public void initMotorControllers(Integer FRD, Integer FRS, Integer FLD, Integer FLS, Integer BLD, Integer BLS, Integer BRD, Integer BRS) {
+  public static void initMotorControllers(Integer FRD, Integer FRS, Integer FLD, Integer FLS, Integer BLD, Integer BLS, Integer BRD, Integer BRS) {
     FrontRight.Drive = new CANSparkMax(FRD, MotorType.kBrushless);
     FrontRight.Steer = new TalonSRX(FRS);
     FrontLeft.Drive = new CANSparkMax(FLD, MotorType.kBrushless);
@@ -149,7 +152,7 @@ public class SwerveDrive extends SubsystemBase {
    * @param SD
 	 *            Steer Derivative value
    */
-  public void updatePID(double DFF, double DP, double DI, double DD, double SFF, double SP, double SI, double SD) {
+  public static void updatePID(double DFF, double DP, double DI, double DD, double SFF, double SP, double SI, double SD) {
     FrontRight.setPIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
     FrontLeft.setPIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
     BackLeft.setPIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
@@ -170,7 +173,7 @@ public class SwerveDrive extends SubsystemBase {
    * @param SpinMod
    *            Number to multiply the rotation speed of the robot by, to modify speed while driving
    */
-  public void calculateSpeedsAndAngles(double X, double Y, double Spin, double XYMod, double SpinMod) {
+  public static void calculateSpeedsAndAngles(double X, double Y, double Spin, double XYMod, double SpinMod) {
     // Set the desired speeds for the robot, we also pass in the gyro angle for field oriented drive
     if (FieldOrientedSwerveEnabled) {
       Speeds = ChassisSpeeds.fromFieldRelativeSpeeds((Y * XYMod), (X * XYMod), (Spin * SpinMod), GyroRotation2d);
@@ -197,7 +200,7 @@ public class SwerveDrive extends SubsystemBase {
   /**
    * Do all of the math to optimize wheel angles, and output to the wheel modules
    */
-  public void optimizeAndSetOutputs() {
+  public static void optimizeAndSetOutputs() {
     // Do math to get multiple variables out of the encoder position
     FrontLeft.setEncoderVariables();
     FrontRight.setEncoderVariables();
@@ -231,7 +234,7 @@ public class SwerveDrive extends SubsystemBase {
    * 
    * @return The Pose2d of the robot
    */
-  public Pose2d getPose() {
+  public static Pose2d getPose() {
     return Odometry.getPoseMeters();
   }
 
@@ -240,11 +243,11 @@ public class SwerveDrive extends SubsystemBase {
    * 
    * @return The Rotation2d of the robot
    */
-  public Rotation2d getRotation() {
+  public static Rotation2d getRotation() {
     return GyroRotation2d;
   }
 
-  public void setModuleStates(SwerveModuleState[] DesiredStates) {
+  public static void setModuleStates(SwerveModuleState[] DesiredStates) {
     SwerveDriveKinematics.desaturateWheelSpeeds(DesiredStates, 2);
     ModuleStates = DesiredStates;
     
@@ -265,7 +268,7 @@ public class SwerveDrive extends SubsystemBase {
     optimizeAndSetOutputs();
   }
 
-  public void stop() {
+  public static void stop() {
     System.out.println("End X:" + Odometry.getPoseMeters().getX());
     System.out.println("End Y:" + Odometry.getPoseMeters().getY());
     calculateSpeedsAndAngles(0.0, 0.0, 0.0, 1.0, 1.0);

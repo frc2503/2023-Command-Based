@@ -4,65 +4,52 @@
 
 package frc.robot.subsystems;
 
-import edu.wpi.first.math.controller.HolonomicDriveController;
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.ProfiledPIDController;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
+import java.io.*;
+import java.util.*;
+
+import edu.wpi.first.math.controller.*;
+import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
-import edu.wpi.first.math.trajectory.Trajectory;
-import edu.wpi.first.math.trajectory.TrajectoryConfig;
-import edu.wpi.first.math.trajectory.TrajectoryGenerator;
+import edu.wpi.first.math.trajectory.*;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.constraint.SwerveDriveKinematicsConstraint;
 import edu.wpi.first.wpilibj.Filesystem;
-import edu.wpi.first.wpilibj2.command.CommandBase;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
-
+import edu.wpi.first.wpilibj2.command.CommandBase;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
+import frc.SwerveSubsystem.SwerveDrive;
 import frc.robot.Constants;
 
-import java.io.*;
-
 public class Autonomous extends SubsystemBase {
-  private Tracking Track;
-  private SwerveDrive Swerve;
-  private RobotMechanisms Mechanisms;
-  private TrajectoryLoader TrajectoryLoader;
-  private SendableChooser<String> AutoChooser;
-  private String[] AutoNames;
-  private String AutoFile;
-  private File TrajFile;
-  private TrajectoryConfig TrajConfig;
-  private Trajectory Trajectory;
-  private SwerveDriveKinematicsConstraint SwerveDriveMaxSpeed;
-  private Constraints PIDConstraints;
-  private Scanner AutoReader;
-  private List<String> Lines;
-  private List<String> CurrentLine;
-  private List<String> FileOrder;
-  private List<String> AutoOrder;
-  private List<Translation2d> Translation2ds;
-  private List<Rotation2d> Rotation2ds;
-  private List<Pose2d> Pose2ds;
-  private List<Translation2d> MiddlePoints;
-  private List<SwerveControllerCommand> SwerveControllerCommands;
-  private Integer AutoStage;
-  private Integer StartIndex;
-  private Integer SwerveControllerCommandIndex;
-  private Boolean IsScheduled = false;
-  public Timer Timer;
+  private static TrajectoryLoader TrajectoryLoader;
+  private static SendableChooser<String> AutoChooser;
+  private static String[] AutoNames;
+  private static String AutoFile;
+  private static File TrajFile;
+  private static TrajectoryConfig TrajConfig;
+  private static Trajectory Trajectory;
+  private static SwerveDriveKinematicsConstraint SwerveDriveMaxSpeed;
+  private static Constraints PIDConstraints;
+  private static Scanner AutoReader;
+  private static List<String> Lines;
+  private static List<String> CurrentLine;
+  private static List<String> FileOrder;
+  private static List<String> AutoOrder;
+  private static List<Translation2d> Translation2ds;
+  private static List<Rotation2d> Rotation2ds;
+  private static List<Pose2d> Pose2ds;
+  private static List<Translation2d> MiddlePoints;
+  private static List<SwerveControllerCommand> SwerveControllerCommands;
+  private static Integer AutoStage;
+  private static Integer StartIndex;
+  private static Integer SwerveControllerCommandIndex;
+  private static Boolean IsScheduled = false;
+  public static Timer Timer;
 
-  public class TrajectoryLoader extends CommandBase {
+  public static class TrajectoryLoader extends CommandBase {
     private String PrevAuto;
 
     @Override
@@ -95,10 +82,10 @@ public class Autonomous extends SubsystemBase {
     }
   }
 
-  public Autonomous(SwerveDrive SwerveDrive, Tracking Tracking, RobotMechanisms RobotMechanisms) {
-    Swerve = SwerveDrive;
-    Track = Tracking;
-    Mechanisms = RobotMechanisms;
+  public Autonomous() {
+  }
+
+  public static void init() {
     Lines = new ArrayList<String>();
     CurrentLine = new ArrayList<String>();
     FileOrder = new ArrayList<String>();
@@ -124,12 +111,12 @@ public class Autonomous extends SubsystemBase {
     TrajectoryLoader.schedule();
   }
 
-  public void initTrajectory() throws FileNotFoundException {
+  private static void initTrajectory() throws FileNotFoundException {
     TrajFile = Filesystem.getDeployDirectory().toPath().resolve("output/paths/" + AutoFile).toFile();
     AutoReader = new Scanner(TrajFile);
-    SwerveDriveMaxSpeed = new SwerveDriveKinematicsConstraint(Swerve.Kinematics, Constants.SwerveMaxVelocity);
+    SwerveDriveMaxSpeed = new SwerveDriveKinematicsConstraint(SwerveDrive.Kinematics, Constants.SwerveMaxVelocity);
     PIDConstraints = new Constraints(Constants.SwerveMaxVelocity, Constants.SwerveMaxAcceleration);
-    TrajConfig = new TrajectoryConfig(Constants.SwerveMaxVelocity, Constants.SwerveMaxAcceleration).setKinematics(Swerve.Kinematics).addConstraint(SwerveDriveMaxSpeed);
+    TrajConfig = new TrajectoryConfig(Constants.SwerveMaxVelocity, Constants.SwerveMaxAcceleration).setKinematics(SwerveDrive.Kinematics).addConstraint(SwerveDriveMaxSpeed);
     Lines.clear();
     CurrentLine.clear();
     Translation2ds.clear();
@@ -139,7 +126,7 @@ public class Autonomous extends SubsystemBase {
     FileOrder.clear();
     AutoOrder.clear();
     AutoStage = 0;
-    Swerve.Gyro.reset();
+    SwerveDrive.Gyro.reset();
 
     // Skip title line
     if (AutoReader.hasNextLine()) {
@@ -179,7 +166,7 @@ public class Autonomous extends SubsystemBase {
       CurrentLine.clear();
     }
     // Set the position of the odometry to the starting position of the auto
-    Swerve.Odometry.resetPosition(Swerve.GyroRotation2d, new SwerveModulePosition[] {Swerve.FrontRight.getPosition(), Swerve.FrontLeft.getPosition(), Swerve.BackLeft.getPosition(), Swerve.BackRight.getPosition()}, Pose2ds.get(0));
+    SwerveDrive.Odometry.resetPosition(SwerveDrive.GyroRotation2d, new SwerveModulePosition[] {SwerveDrive.FrontRight.getPosition(), SwerveDrive.FrontLeft.getPosition(), SwerveDrive.BackLeft.getPosition(), SwerveDrive.BackRight.getPosition()}, Pose2ds.get(0));
 
     System.out.println(FileOrder);
 
@@ -198,7 +185,7 @@ public class Autonomous extends SubsystemBase {
         // Generate the trajectory, using the StartIndex for the starting position, the MiddlePoints list we just created, and the current index as the endpoint
         Trajectory = TrajectoryGenerator.generateTrajectory(Pose2ds.get(StartIndex), MiddlePoints, Pose2ds.get(Index), TrajConfig);
         // Generate the SwerveControllerCommand, and put it in the SwerveControllerCommandslist
-        SwerveControllerCommands.add(new SwerveControllerCommand(Trajectory, Swerve::getPose, Swerve.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), Swerve::setModuleStates, Swerve));
+        SwerveControllerCommands.add(new SwerveControllerCommand(Trajectory, SwerveDrive::getPose, SwerveDrive.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), SwerveDrive::setModuleStates));
         // Decrement the index in preparation for the for loop to increment it
         Index--;
         MiddlePoints.clear();
@@ -209,7 +196,7 @@ public class Autonomous extends SubsystemBase {
     System.out.println(AutoOrder);
   }
 
-  private void addPointToLists() {
+  private static void addPointToLists() {
     // Add the Translation2d of the point to the list
     Translation2ds.add(new Translation2d(Double.parseDouble(CurrentLine.get(0)),Double.parseDouble(CurrentLine.get(1))));
     // Check what alliance the auto is for, since Pathweaver doesn't take into account the alliance the robot is on
@@ -225,12 +212,12 @@ public class Autonomous extends SubsystemBase {
     Pose2ds.add(new Pose2d(Translation2ds.get(Translation2ds.size() - 1), Rotation2ds.get(Rotation2ds.size() - 1)));
   }
 
-  public void runAutonomous() {
+  public static void runAutonomous() {
     if (AutoStage <= AutoOrder.size() - 1) {
       if (AutoOrder.get(AutoStage).equals("Move")) {
         if (!IsScheduled) {
           System.out.println("Move");
-          SwerveControllerCommands.get(SwerveControllerCommandIndex).andThen(() -> Swerve.stop()).schedule();
+          SwerveControllerCommands.get(SwerveControllerCommandIndex).andThen(() -> SwerveDrive.stop()).schedule();
           IsScheduled = true;
         }
         if (SwerveControllerCommands.get(SwerveControllerCommandIndex).isFinished()) {
@@ -243,19 +230,19 @@ public class Autonomous extends SubsystemBase {
     if (AutoStage <= AutoOrder.size() - 1) {
       if (AutoOrder.get(AutoStage).equals("Grab Cone")) {
         System.out.println("Grab Cone");
-        Mechanisms.DesiredState = "Grab";
-        Mechanisms.openGrabber();
-        if(Mechanisms.isAtDesiredState()) {
+        RobotMechanisms.DesiredState = "Grab";
+        RobotMechanisms.openGrabber();
+        if(RobotMechanisms.isAtDesiredState()) {
           if(Timer.get() > 0) { //If we are grabbing the cone, we don't want to open grabber, nor keep moving
-            Track.centerOnCone();
+            Tracking.centerOnCone();
           }
-          if(Math.abs(Track.IntakeTargetOffsetV.getDouble(0)) <= 20) {//moved towards cone
+          if(Math.abs(Tracking.IntakeTargetOffsetV.getDouble(0)) <= 20) {//moved towards cone
             if(Timer.get() <= 0.0) {
-              Mechanisms.closeGrabber();
+              RobotMechanisms.closeGrabber();
               Timer.start();
             }
             if(Timer.get() >= 0.1) { //waited for grabber to close
-              Mechanisms.DesiredState = "High";
+              RobotMechanisms.DesiredState = "High";
               AutoStage++;
               Timer.stop();
               Timer.reset();
@@ -267,19 +254,19 @@ public class Autonomous extends SubsystemBase {
     if (AutoStage <= AutoOrder.size() - 1) {
       if (AutoOrder.get(AutoStage).equals("Grab Cube")) {
         System.out.println("Grab Cube");
-        Mechanisms.DesiredState = "Grab";
-        Mechanisms.openGrabber();
-        if(Mechanisms.isAtDesiredState()) {
+        RobotMechanisms.DesiredState = "Grab";
+        RobotMechanisms.openGrabber();
+        if(RobotMechanisms.isAtDesiredState()) {
           if(Timer.get() > 0) { //If we are grabbing the cone, we don't want to open grabber, nor keep moving
-            Track.centerOnCube();
+            Tracking.centerOnCube();
           }
-          if(Math.abs(Track.IntakeTargetOffsetV.getDouble(0)) <= 20) {//moved towards cone
+          if(Math.abs(Tracking.IntakeTargetOffsetV.getDouble(0)) <= 20) {//moved towards cone
             if(Timer.get() <= 0.0) {
-              Mechanisms.closeGrabber();
+              RobotMechanisms.closeGrabber();
               Timer.start();
             }
             if(Timer.get() >= 0.1) { //waited for grabber to close
-              Mechanisms.DesiredState = "High";
+              RobotMechanisms.DesiredState = "High";
               AutoStage++;
               Timer.stop();
               Timer.reset();
@@ -291,27 +278,27 @@ public class Autonomous extends SubsystemBase {
     if (AutoStage <= AutoOrder.size() - 1) {
       if (AutoOrder.get(AutoStage).equals("Place Cone")) {
         System.out.println("Place Cone");
-        Mechanisms.DesiredState = "Place1";
-        System.out.println("Arm Angle: " + Mechanisms.ArmAngle.getEncoder().getPosition());
-        if(Mechanisms.isAtDesiredState()) {
+        RobotMechanisms.DesiredState = "Place1";
+        System.out.println("Arm Angle: " + RobotMechanisms.ArmAngle.getEncoder().getPosition());
+        if(RobotMechanisms.isAtDesiredState()) {
           if(Timer.get() <= 0.0) {
-            Mechanisms.openGrabber();
+            RobotMechanisms.openGrabber();
             Timer.start();
           }
           if(Timer.get() >= 0.2) { //wait for grabber to open
-            Mechanisms.DesiredState = "Grab";
+            RobotMechanisms.DesiredState = "Grab";
             AutoStage++;
             Timer.stop();
             Timer.reset();
           }
-          // Track.centerOnPole();
-          // if(Math.abs(Track.ArmTargetOffsetH.getDouble(0)) <= 20) {
+          // Tracking.centerOnPole();
+          // if(Math.abs(Tracking.ArmTargetOffsetH.getDouble(0)) <= 20) {
           //   if(Timer.get() <= 0.0) {
-          //     Mechanisms.openGrabber();
+          //     RobotMechanisms.openGrabber();
           //     Timer.start();
           //   }
           //   if(Timer.get() >= 0.2) { //waited for grabber to open
-          //     Mechanisms.DesiredState = "Stowed";
+          //     RobotMechanisms.DesiredState = "Stowed";
           //     AutoStage++;
           //     Timer.stop();
           //     Timer.reset();
@@ -322,12 +309,12 @@ public class Autonomous extends SubsystemBase {
     if (AutoStage <= AutoOrder.size() - 1) {
       if (AutoOrder.get(AutoStage).equals("Place Cube")) {
         System.out.println("Place Cube");
-        Mechanisms.DesiredState = "Place1";
-        if(Mechanisms.isAtDesiredState()) {
-          Track.centerOnPlatform();
-          if(Math.abs(Track.ArmTargetOffsetH.getDouble(0)) <= 20) {
-            Mechanisms.openGrabber();
-            Mechanisms.DesiredState = "High";
+        RobotMechanisms.DesiredState = "Place1";
+        if(RobotMechanisms.isAtDesiredState()) {
+          Tracking.centerOnPlatform();
+          if(Math.abs(Tracking.ArmTargetOffsetH.getDouble(0)) <= 20) {
+            RobotMechanisms.openGrabber();
+            RobotMechanisms.DesiredState = "High";
             AutoStage++;
           }
         }

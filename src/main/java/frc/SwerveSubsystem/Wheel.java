@@ -2,7 +2,7 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package frc.robot.subsystems;
+package frc.SwerveSubsystem;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -75,8 +75,6 @@ public class Wheel extends SubsystemBase {
     // Tell the Steer motor controller that an encoder exists, and what kind it is
     Steer.configSelectedFeedbackSensor(FeedbackDevice.Analog);
 
-    Steer.configSelectedFeedbackCoefficient(1 / Constants.SteerEncoderCountsPerRevolution);
-
     // Define what encoder the object "DriveEncoder" refers to
     DriveEncoder = Drive.getEncoder(SparkMaxRelativeEncoder.Type.kHallSensor, 42);
     
@@ -133,7 +131,7 @@ public class Wheel extends SubsystemBase {
    */
   public void setEncoderVariables() {
     // Store position of the steer encoder to prevent discrepancies
-    SteerAngRot = Steer.getSelectedSensorPosition();
+    SteerAngRot = (Steer.getSelectedSensorPosition() / Constants.SteerEncoderCountsPerRevolution);
 
     // Get the number of full rotations the wheel has gone through
     SteerFullRot = Math.floor(SteerAngRot);
@@ -210,7 +208,7 @@ public class Wheel extends SubsystemBase {
     // This causes a problem because the drive wheel speed does not instantly go to zero, causing the robot's direction to change
     // This if statement fixes this issue by only changing the angle of the wheel if and only if any of the desired robot speeds are greater than 0
     if (IsInput == true) {
-      Steer.set(ControlMode.Position, (ModuleState.angle.getDegrees() / 360.0));
+      Steer.set(ControlMode.Position, (ModuleState.angle.getDegrees() / 360.0) * Constants.SteerEncoderCountsPerRevolution);
     }
 
     //Steer.set(ControlMode.Position, 0);

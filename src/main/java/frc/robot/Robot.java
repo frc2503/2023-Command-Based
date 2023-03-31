@@ -11,20 +11,15 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 import edu.wpi.first.networktables.*;
+import frc.SwerveSubsystem.SwerveDrive;
 import frc.robot.subsystems.Autonomous;
 import frc.robot.subsystems.RobotMechanisms;
-import frc.robot.subsystems.SwerveDrive;
 import frc.robot.subsystems.Tracking;
 
 
 
 public class Robot extends TimedRobot {
   // Define objects and variables
-  public SwerveDrive SwerveDrive;
-  public RobotMechanisms RobotMechanisms;
-  public Tracking Tracking;
-  public Autonomous Autonomous;
-
   private Joystick LeftStick;
   private Joystick RightStick;
 
@@ -47,10 +42,10 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     // Instantiate an object for each class
-    SwerveDrive = new SwerveDrive();
-    RobotMechanisms = new RobotMechanisms(SwerveDrive);
-    Tracking = new Tracking(SwerveDrive);
-    Autonomous = new Autonomous(SwerveDrive, Tracking, RobotMechanisms);
+    SwerveDrive.init();
+    RobotMechanisms.init();
+    Tracking.init();
+    Autonomous.init();
 
     // Assign joysticks to the "LeftStick" and "RightStick" objects
     LeftStick = new Joystick(0);

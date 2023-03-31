@@ -10,30 +10,32 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.SwerveSubsystem.SwerveDrive;
 
 public class Tracking extends SubsystemBase {
-  public NetworkTableInstance Inst;
-  public NetworkTable ArmLimelight;
-  public NetworkTableEntry ArmHasTarget;
-  public NetworkTableEntry ArmTargetOffsetH;
-  public NetworkTableEntry ArmTargetOffsetV;
-  public NetworkTableEntry ArmTargetArea;
-  public NetworkTableEntry ArmTargetSkew;
-  public NetworkTableEntry ArmPipeline;
+  public static NetworkTableInstance Inst;
+  public static NetworkTable ArmLimelight;
+  public static NetworkTableEntry ArmHasTarget;
+  public static NetworkTableEntry ArmTargetOffsetH;
+  public static NetworkTableEntry ArmTargetOffsetV;
+  public static NetworkTableEntry ArmTargetArea;
+  public static NetworkTableEntry ArmTargetSkew;
+  public static NetworkTableEntry ArmPipeline;
   
-  public NetworkTable IntakeLimelight;
-  public NetworkTableEntry IntakeHasTarget;
-  public NetworkTableEntry IntakeTargetOffsetH;
-  public NetworkTableEntry IntakeTargetOffsetV;
-  public NetworkTableEntry IntakeTargetArea;
-  public NetworkTableEntry IntakeTargetSkew;
-  public NetworkTableEntry IntakePipeline;
-  private SwerveDrive Swerve;
-  private Constraints PIDConstraints;
-  private ProfiledPIDController PID;
+  public static NetworkTable IntakeLimelight;
+  public static NetworkTableEntry IntakeHasTarget;
+  public static NetworkTableEntry IntakeTargetOffsetH;
+  public static NetworkTableEntry IntakeTargetOffsetV;
+  public static NetworkTableEntry IntakeTargetArea;
+  public static NetworkTableEntry IntakeTargetSkew;
+  public static NetworkTableEntry IntakePipeline;
+  private static Constraints PIDConstraints;
+  private static ProfiledPIDController PID;
 
-  public Tracking(SwerveDrive SwerveDrive) {
-    Swerve = SwerveDrive;
+  public Tracking() {
+  }
+
+  public static void init() {
     Inst = NetworkTableInstance.getDefault();
     ArmLimelight = Inst.getTable("limelight-arm");
     ArmHasTarget = ArmLimelight.getEntry("tv");
@@ -54,42 +56,42 @@ public class Tracking extends SubsystemBase {
     PID = new ProfiledPIDController(1, 0, 0, PIDConstraints);
   }
 
-  public void centerOnPole() {
+  public static void centerOnPole() {
     ArmPipeline.setValue(0);
     if (ArmTargetOffsetH.getDouble(0) >= 1) {
-      Swerve.calculateSpeedsAndAngles(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
+      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
     }
     else {
-      Swerve.calculateSpeedsAndAngles(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), -PID.calculate(ArmTargetOffsetV.getDouble(0), 0.0), 0.0, .1, 0.0);
+      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), -PID.calculate(ArmTargetOffsetV.getDouble(0), 0.0), 0.0, .1, 0.0);
     }
-    Swerve.optimizeAndSetOutputs();
+    SwerveDrive.optimizeAndSetOutputs();
   }
-  public void centerOnPlatform() {
+  public static void centerOnPlatform() {
     ArmPipeline.setValue(1);
     if (ArmTargetOffsetH.getDouble(0) >= 1) {
-      Swerve.calculateSpeedsAndAngles(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
+      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0);
     }
     else {
-      Swerve.calculateSpeedsAndAngles(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), -PID.calculate(ArmTargetOffsetV.getDouble(0), 0.0), 0.0, .1, 0.0);
+      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(ArmTargetOffsetH.getDouble(0), 0.0), -PID.calculate(ArmTargetOffsetV.getDouble(0), 0.0), 0.0, .1, 0.0);
     }
-    Swerve.optimizeAndSetOutputs();
+    SwerveDrive.optimizeAndSetOutputs();
   }
-  public void centerOnCone() {
+  public static void centerOnCone() {
     IntakePipeline.setValue(0);
     if(Math.abs(IntakeTargetOffsetH.getDouble(0)) >= 1) { //If centered on the cone with deadzone, move forward. Default prevents move
-      Swerve.calculateSpeedsAndAngles(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0, 0.0, .1, 0.0);
+      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0, 0.0, .1, 0.0);
     } else {
-      Swerve.calculateSpeedsAndAngles(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 1, 0.0, .1, 0.0);
+      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 1, 0.0, .1, 0.0);
     }
-    Swerve.optimizeAndSetOutputs();
+    SwerveDrive.optimizeAndSetOutputs();
   }
-  public void centerOnCube() {
+  public static void centerOnCube() {
     IntakePipeline.setValue(1);
     if(Math.abs(IntakeTargetOffsetH.getDouble(0)) >= 1) { //If centered on the cube with deadzone, move forward. Default prevents move
-      Swerve.calculateSpeedsAndAngles(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0, 0.0, .1, 0.0);
+      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 0, 0.0, .1, 0.0);
     } else {
-      Swerve.calculateSpeedsAndAngles(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 1, 0.0, .1, 0.0);
+      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(IntakeTargetOffsetH.getDouble(0), 0.0), 1, 0.0, .1, 0.0);
     }
-    Swerve.optimizeAndSetOutputs();
+    SwerveDrive.optimizeAndSetOutputs();
   }
 }

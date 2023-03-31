@@ -6,8 +6,8 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
-import frc.robot.subsystems.Wheel;
-import frc.robot.subsystems.SwerveDrive;
+import frc.SwerveSubsystem.SwerveDrive;
+import frc.SwerveSubsystem.Wheel;
 import frc.robot.subsystems.Autonomous;
 import frc.robot.subsystems.RobotMechanisms;
 import frc.robot.subsystems.Tracking;
@@ -23,9 +23,9 @@ public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final Wheel WheelSubsystem = new Wheel(0, 0);
   private final SwerveDrive SwerveDriveSubsystem = new SwerveDrive();
-  private final RobotMechanisms RobotMechanismsSubsystem = new RobotMechanisms(SwerveDriveSubsystem);
-  private final Tracking TrackingSubsystem = new Tracking(SwerveDriveSubsystem);
-  private final Autonomous AutonomousSubsystem = new Autonomous(SwerveDriveSubsystem, TrackingSubsystem, RobotMechanismsSubsystem);
+  private final RobotMechanisms RobotMechanismsSubsystem = new RobotMechanisms();
+  private final Tracking TrackingSubsystem = new Tracking();
+  private final Autonomous AutonomousSubsystem = new Autonomous();
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
