@@ -112,7 +112,7 @@ public class Wheel extends SubsystemBase {
    * @param SD
 	 *            Steer Derivative value
    */
-  public void setPIDValues(double DFF, double DP, double DI, double DD, double SFF, double SP, double SI, double SD) {
+  public void updatePIDValues(double DFF, double DP, double DI, double DD, double SFF, double SP, double SI, double SD) {
     DrivePIDController.setFF(DFF);
     DrivePIDController.setP(DP);
     DrivePIDController.setI(DI);

@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 import edu.wpi.first.networktables.*;
+import frc.PathConverter.PathConverter;
 import frc.SwerveSubsystem.SwerveDrive;
 import frc.robot.subsystems.Autonomous;
 import frc.robot.subsystems.RobotMechanisms;
@@ -43,6 +44,7 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     // Instantiate an object for each class
     SwerveDrive.init();
+    PathConverter.init();
     RobotMechanisms.init();
     Tracking.init();
     Autonomous.init();
@@ -73,7 +75,7 @@ public class Robot extends TimedRobot {
     RobotMechanisms.ArmExtendPIDController.setD(DGain.getEntry().getDouble(0));
     */
     
-    //SwerveDrive.setPID(FFGain.getEntry().getDouble(0), PGain.getEntry().getDouble(0), IGain.getEntry().getDouble(0), DGain.getEntry().getDouble(0), 8.0, 0.01, 0.01);
+    //SwerveDrive.updatePIDValues(FFGain.getEntry().getDouble(0), PGain.getEntry().getDouble(0), IGain.getEntry().getDouble(0), DGain.getEntry().getDouble(0), 8.0, 0.01, 0.01);
   }
  
   @Override
@@ -191,6 +193,5 @@ public class Robot extends TimedRobot {
   public void autonomousPeriodic(){
     SwerveDrive.GyroRotation2d = SwerveDrive.Gyro.getRotation2d(); 
     Autonomous.runAutonomous();
-    RobotMechanisms.goToDesiredState();
   }
 }

@@ -80,7 +80,7 @@ public class SwerveDrive extends SubsystemBase {
     BackLeft.initEncodersAndPIDControllers();
     BackRight.initEncodersAndPIDControllers();
 
-    updatePID(Constants.DriveFeedForward, Constants.DriveProportional, Constants.DriveIntegral, Constants.DriveDerivative, Constants.SteerFeedForward, Constants.SteerProportional, Constants.SteerIntegral, Constants.SteerDerivative);
+    updatePIDValues(Constants.DriveFeedForward, Constants.DriveProportional, Constants.DriveIntegral, Constants.DriveDerivative, Constants.SteerFeedForward, Constants.SteerProportional, Constants.SteerIntegral, Constants.SteerDerivative);
     
     // Pass in the reported positions from each module, to prevent any weird offsets
     ModulePositions = new SwerveModulePosition[] {FrontRight.getPosition(), FrontLeft.getPosition(), BackLeft.getPosition(), BackRight.getPosition()};
@@ -97,43 +97,7 @@ public class SwerveDrive extends SubsystemBase {
   }
 
   /**
-	 * Assign motor controllers their CAN numbers, and call the initEncodersAndPIDControllers() method for each wheel module
-	 *
-	 * @param FRD
-	 *            CAN number of the front right drive motor controller
-	 * @param FRS
-	 *            CAN number of the front right steer motor controller
-   * @param FLD
-	 *            CAN number of the front left drive motor controller
-   * @param FLS
-	 *            CAN number of the front left steer motor controller
-   * @param BLD
-	 *            CAN number of the back left drive motor controller
-   * @param BLS
-	 *            CAN number of the back left steer motor controller
-   * @param BRD
-	 *            CAN number of the back right drive motor controller
-   * @param BRS
-	 *            CAN number of the back right steer motor controller
-	 */
-  public static void initMotorControllers(Integer FRD, Integer FRS, Integer FLD, Integer FLS, Integer BLD, Integer BLS, Integer BRD, Integer BRS) {
-    FrontRight.Drive = new CANSparkMax(FRD, MotorType.kBrushless);
-    FrontRight.Steer = new TalonSRX(FRS);
-    FrontLeft.Drive = new CANSparkMax(FLD, MotorType.kBrushless);
-    FrontLeft.Steer = new TalonSRX(FLS);
-    BackRight.Drive = new CANSparkMax(BRD, MotorType.kBrushless);
-    BackRight.Steer = new TalonSRX(BRS);
-    BackLeft.Drive = new CANSparkMax(BLD, MotorType.kBrushless);
-    BackLeft.Steer = new TalonSRX(BLS);
-    
-    FrontRight.initEncodersAndPIDControllers();
-    FrontLeft.initEncodersAndPIDControllers();
-    BackLeft.initEncodersAndPIDControllers();
-    BackRight.initEncodersAndPIDControllers();
-  }
-
-  /**
-   * Call the setPIDValues() method for each wheel module
+   * Call the updatePIDValues() method for each wheel module
    * 
    * @param DFF
    *            Drive Feed-Forward value
@@ -152,11 +116,11 @@ public class SwerveDrive extends SubsystemBase {
    * @param SD
 	 *            Steer Derivative value
    */
-  public static void updatePID(double DFF, double DP, double DI, double DD, double SFF, double SP, double SI, double SD) {
-    FrontRight.setPIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
-    FrontLeft.setPIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
-    BackLeft.setPIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
-    BackRight.setPIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
+  public static void updatePIDValues(double DFF, double DP, double DI, double DD, double SFF, double SP, double SI, double SD) {
+    FrontRight.updatePIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
+    FrontLeft.updatePIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
+    BackLeft.updatePIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
+    BackRight.updatePIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
   }
 
   /**
