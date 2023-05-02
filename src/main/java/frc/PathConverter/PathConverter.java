@@ -13,6 +13,7 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.trajectory.*;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.constraint.SwerveDriveKinematicsConstraint;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -24,7 +25,8 @@ import frc.robot.Constants;
 
 public class PathConverter extends SubsystemBase {
   private static TrajectoryLoader TrajectoryLoader;
-  private static SendableChooser<String> AutoChooser;
+  private static List<SendableChooser<String>> AutoChoosers;
+  private static int AutoChooserListID;
   private static String[] AutoNames;
   private static String AutoFile;
   private static File TrajFile;
@@ -45,14 +47,20 @@ public class PathConverter extends SubsystemBase {
   private static int StartIndex;
 
   public static class TrajectoryLoader extends CommandBase {
-    private String PrevAuto;
+    @Override
+    public boolean runsWhenDisabled() {
+      return true;
+    }
 
     @Override
     public void initialize() {
-      // Load default autonomous file
-      PrevAuto = AutoChooser.getSelected();
-      AutoFile = AutoChooser.getSelected();
-      if (AutoChooser.getSelected() != null) {
+      AutoFile = "None";
+    }
+  
+    @Override
+    public void execute() {
+      if (AutoFile != AutoChoosers.get(AutoChooserListID).getSelected()) {
+        AutoFile = AutoChoosers.get(AutoChooserListID).getSelected();
         System.out.println(AutoFile);
         try {
           initTrajectory();
@@ -60,19 +68,15 @@ public class PathConverter extends SubsystemBase {
           System.out.println("AUTO NOT FOUND");
         }
       }
-    }
-  
-    @Override
-    public void execute() {
-      if (PrevAuto != AutoChooser.getSelected()) {
-        AutoFile = AutoChooser.getSelected();
-        System.out.println(AutoFile);
-        try {
-          initTrajectory();
-        } catch (FileNotFoundException e) {
-          System.out.println("AUTO NOT FOUND");
+
+      if ((DriverStation.getAlliance() == DriverStation.Alliance.Red & AutoChooserListID != 0) || (DriverStation.getAlliance() == DriverStation.Alliance.Blue & AutoChooserListID != 1)) {
+        if (DriverStation.getAlliance() == DriverStation.Alliance.Red) {
+          AutoChooserListID = 0;
         }
-        PrevAuto = AutoChooser.getSelected();
+        if (DriverStation.getAlliance() == DriverStation.Alliance.Blue) {
+          AutoChooserListID = 1;
+        }
+        SmartDashboard.putData("AutoChooser", AutoChoosers.get(AutoChooserListID));
       }
     }
   }
@@ -91,13 +95,27 @@ public class PathConverter extends SubsystemBase {
     MiddlePoints = new ArrayList<Translation2d>();
     SwerveControllerCommands = new ArrayList<SwerveControllerCommand>();
 
-    AutoChooser = new SendableChooser<String>();
+    AutoChoosers = Arrays.asList(new SendableChooser<String>(), new SendableChooser<String>());
     AutoNames = Filesystem.getDeployDirectory().toPath().resolve("output/paths").toFile().list();
     for (Integer Index = 0; Index <= AutoNames.length - 1; Index++) {
-      AutoChooser.addOption(AutoNames[Index], AutoNames[Index]);
+      // Create auto options for each alliance
+      if (AutoNames[Index].toString().contains("Red")) {
+        AutoChoosers.get(0).addOption(AutoNames[Index], AutoNames[Index]);
+      }
+      else if (AutoNames[Index].toString().contains("Blue")) {
+        AutoChoosers.get(1).addOption(AutoNames[Index], AutoNames[Index]);
+      }
     }
-    AutoChooser.setDefaultOption("BlueTest", "BlueTest");
-    SmartDashboard.putData("AutoChooser", AutoChooser);
+    if (DriverStation.getAlliance() == DriverStation.Alliance.Red) {
+      AutoChooserListID = 0;
+    }
+    else {
+      AutoChooserListID = 1;
+    }
+    AutoChoosers.get(0).setDefaultOption("RedTest", "RedTest");
+    AutoChoosers.get(1).setDefaultOption("BlueTest", "BlueTest");
+
+    SmartDashboard.putData("AutoChooser", AutoChoosers.get(AutoChooserListID));
 
     TrajectoryLoader = new TrajectoryLoader();
     TrajectoryLoader.schedule();
@@ -164,19 +182,25 @@ public class PathConverter extends SubsystemBase {
     // Create all required SwerveControllerCommands, as well as a roadmap for what to do at each step of auto
     for (Integer Index = 0; Index <= FileOrder.size() - 1; Index++) {
       // If the next command is to move, create a SwerveControllerCommand for every point up to the next non-move command
-      if (FileOrder.get(Index) == "Move") {
+      if (FileOrder.get(Index).equals("Move")) {
         // Store the starting index, since this is the beginning point of the move, then increment the index
         StartIndex = Index++;
         // Create the list of midpoints
         if (Index <= FileOrder.size() - 2) {
-          while (Index <= FileOrder.size() - 2 & FileOrder.get(Index) == "Move") {
+          while (Index <= FileOrder.size() - 2 & FileOrder.get(Index).equals("Move")) {
             MiddlePoints.add(Translation2ds.get(Index++));
           }
+          if (Index <= FileOrder.size() - 1) {
+            if (FileOrder.get(Index).equals("Move")) {
+              MiddlePoints.add(Translation2ds.get(Index++));
+            }
+          }
         }
+        System.out.println(MiddlePoints.size());
         // Generate the trajectory, using the StartIndex for the starting position, the MiddlePoints list we just created, and the current index as the endpoint
         Trajectory = TrajectoryGenerator.generateTrajectory(Pose2ds.get(StartIndex), MiddlePoints, Pose2ds.get(Index), TrajConfig);
         // Generate the SwerveControllerCommand, and put it in the SwerveControllerCommandslist
-        SwerveControllerCommands.add(new SwerveControllerCommand(Trajectory, SwerveDrive::getPose, SwerveDrive.Kinematics, new HolonomicDriveController(new PIDController(1, 0, 0), new PIDController(1, 0, 0), new ProfiledPIDController(1, 0, 0, PIDConstraints)), SwerveDrive::setModuleStates));
+        SwerveControllerCommands.add(new SwerveControllerCommand(Trajectory, SwerveDrive::getPose, SwerveDrive.Kinematics, new HolonomicDriveController(new PIDController(3, 0, 0), new PIDController(3, 0, 0), new ProfiledPIDController(1.5, 0, 0, PIDConstraints)), SwerveDrive::setModuleStates));
         // Decrement the index in preparation for the for loop to increment it
         Index--;
         MiddlePoints.clear();
@@ -190,15 +214,9 @@ public class PathConverter extends SubsystemBase {
   private static void addPointToLists() {
     // Add the Translation2d of the point to the list
     Translation2ds.add(new Translation2d(Double.parseDouble(CurrentLine.get(0)),Double.parseDouble(CurrentLine.get(1))));
-    // Check what alliance the auto is for, since Pathweaver doesn't take into account the alliance the robot is on
-    if (AutoFile.contains("Red")) {
-      // Add the Rotation2d of the point to the list, and invert it to solve the previously stated issue
-      Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))) + Math.PI));
-    }
-    if (AutoFile.contains("Blue")) {
-      // Add the Rotation2d of the point to the list
-      Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2)))));
-    }
+    // Add the Rotation2d of the point to the list
+    Rotation2ds.add(new Rotation2d(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2)))));
+    System.out.println(Math.atan2(Double.parseDouble(CurrentLine.get(3)), Double.parseDouble(CurrentLine.get(2))));
     // Also add the Pose2d of the point to the list, for the endpoints
     Pose2ds.add(new Pose2d(Translation2ds.get(Translation2ds.size() - 1), Rotation2ds.get(Rotation2ds.size() - 1)));
   }

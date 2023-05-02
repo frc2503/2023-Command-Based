@@ -165,6 +165,9 @@ public class SwerveDrive extends SubsystemBase {
    * Do all of the math to optimize wheel angles, and output to the wheel modules
    */
   public static void optimizeAndSetOutputs() {
+
+    System.out.println(Odometry.getPoseMeters().getX() + ", " + Odometry.getPoseMeters().getY());
+
     // Do math to get multiple variables out of the encoder position
     FrontLeft.setEncoderVariables();
     FrontRight.setEncoderVariables();
@@ -211,21 +214,21 @@ public class SwerveDrive extends SubsystemBase {
     return GyroRotation2d;
   }
 
-  public static void setModuleStates(SwerveModuleState[] DesiredStates) {
+  public static void setModuleStates(SwerveModuleState[] DesiredStates) {    
     SwerveDriveKinematics.desaturateWheelSpeeds(DesiredStates, 2);
     ModuleStates = DesiredStates;
     
     // Front left module state
-    FrontLeft.ModuleState = new SwerveModuleState(ModuleStates[0].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[0].angle.getRadians()));
+    FrontLeft.ModuleState = new SwerveModuleState(ModuleStates[0].speedMetersPerSecond, new Rotation2d(ModuleStates[0].angle.getRadians()));
 
     // Front right module state
-    FrontRight.ModuleState = new SwerveModuleState(ModuleStates[1].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[1].angle.getRadians()));
+    FrontRight.ModuleState = new SwerveModuleState(ModuleStates[1].speedMetersPerSecond, new Rotation2d(ModuleStates[1].angle.getRadians()));
 
     // Back left module state
-    BackLeft.ModuleState = new SwerveModuleState(ModuleStates[2].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[2].angle.getRadians()));
+    BackLeft.ModuleState = new SwerveModuleState(ModuleStates[2].speedMetersPerSecond, new Rotation2d(ModuleStates[2].angle.getRadians()));
 
     // Back right module state
-    BackRight.ModuleState = new SwerveModuleState(ModuleStates[3].speedMetersPerSecond, new Rotation2d((2 * Math.PI) - ModuleStates[3].angle.getRadians()));
+    BackRight.ModuleState = new SwerveModuleState(ModuleStates[3].speedMetersPerSecond, new Rotation2d(ModuleStates[3].angle.getRadians()));
 
     //System.out.println(Odometry.getPoseMeters().getX());
 

@@ -42,8 +42,8 @@ public final class Constants {
     public static int SteerEncoderCountsPerRevolution = 1024;
 
     // Swerve drive maximum velocity in m/s
-    public static double SwerveMaxVelocity = 3;
+    public static double SwerveMaxVelocity = 1;
 
     // Swerve drive maximum acceleration in m/s²
-    public static double SwerveMaxAcceleration = 3;
+    public static double SwerveMaxAcceleration = 1;
 }
