@@ -183,12 +183,12 @@ public class SwerveDrive extends SubsystemBase {
     // Update Odometry, so the robot knows its position on the field
     ModulePositions = new SwerveModulePosition[] {FrontRight.getPosition(), FrontLeft.getPosition(), BackLeft.getPosition(), BackRight.getPosition()};
     
-    if (FieldOrientedSwerveEnabled) {
+    //if (FieldOrientedSwerveEnabled) {
       Odometry.update(GyroRotation2d, ModulePositions);
-    }
-    else if (!FieldOrientedSwerveEnabled) {
-      Odometry.update(new Rotation2d(0), ModulePositions);
-    }
+    //}
+    // else if (!FieldOrientedSwerveEnabled) {
+    //   Odometry.update(new Rotation2d(0), ModulePositions);
+    // }
 
     FrontRight.setOutputs();
     FrontLeft.setOutputs();
@@ -215,7 +215,7 @@ public class SwerveDrive extends SubsystemBase {
   }
 
   public static void setModuleStates(SwerveModuleState[] DesiredStates) {    
-    SwerveDriveKinematics.desaturateWheelSpeeds(DesiredStates, 2);
+    SwerveDriveKinematics.desaturateWheelSpeeds(DesiredStates, Constants.SwerveMaxVelocity);
     ModuleStates = DesiredStates;
     
     // Front left module state

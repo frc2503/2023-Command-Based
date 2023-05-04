@@ -218,7 +218,7 @@ public class Wheel extends SubsystemBase {
   }
 
   public SwerveModulePosition getPosition() {
-    ModulePos = new SwerveModulePosition((((DriveEncoder.getPosition()) * .15) * ((4 / 39.37) * Math.PI)), new Rotation2d(SteerAngRad));
+    ModulePos = new SwerveModulePosition((((DriveEncoder.getPosition()) * .15) * ((4 / 39.37) * Math.PI)), new Rotation2d(SteerAngRad).unaryMinus());
     return ModulePos;
   }
 }

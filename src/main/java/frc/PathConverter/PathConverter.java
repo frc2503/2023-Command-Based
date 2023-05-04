@@ -200,7 +200,7 @@ public class PathConverter extends SubsystemBase {
         // Generate the trajectory, using the StartIndex for the starting position, the MiddlePoints list we just created, and the current index as the endpoint
         Trajectory = TrajectoryGenerator.generateTrajectory(Pose2ds.get(StartIndex), MiddlePoints, Pose2ds.get(Index), TrajConfig);
         // Generate the SwerveControllerCommand, and put it in the SwerveControllerCommandslist
-        SwerveControllerCommands.add(new SwerveControllerCommand(Trajectory, SwerveDrive::getPose, SwerveDrive.Kinematics, new HolonomicDriveController(new PIDController(3, 0, 0), new PIDController(3, 0, 0), new ProfiledPIDController(1.5, 0, 0, PIDConstraints)), SwerveDrive::setModuleStates));
+        SwerveControllerCommands.add(new SwerveControllerCommand(Trajectory, SwerveDrive::getPose, SwerveDrive.Kinematics, new HolonomicDriveController(new PIDController(3, 0, 0), new PIDController(-3, 0, 0), new ProfiledPIDController(1.5, 0, 0, PIDConstraints)), SwerveDrive::setModuleStates));
         // Decrement the index in preparation for the for loop to increment it
         Index--;
         MiddlePoints.clear();
