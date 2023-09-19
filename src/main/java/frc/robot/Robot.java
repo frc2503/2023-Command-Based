@@ -191,7 +191,7 @@ public class Robot extends TimedRobot {
   //Autonomous repeat
   @Override
   public void autonomousPeriodic(){
-    SwerveDrive.GyroRotation2d = SwerveDrive.Gyro.getRotation2d().unaryMinus(); 
+    SwerveDrive.GyroRotation2d = SwerveDrive.Gyro.getRotation2d(); 
     Autonomous.runAutonomous();
   }
 }
