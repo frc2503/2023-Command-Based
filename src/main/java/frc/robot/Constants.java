@@ -13,37 +13,48 @@ package frc.robot;
  * constants are needed, to reduce verbosity.
  */
 public final class Constants {
-    // CAN IDs for all swerve motor controllers
-    public static int FrontRightDriveCANID = 1;
-    public static int FrontRightSteerCANID = 5;
+  // Distance from center for wheels. Currently assumes rectangulare wheel arrangement
+  public static double frontWheelPosition = 0.2604;
+  public static double backWheelPosition = -0.2604;
+  public static double rightWheelPosition = -0.2786;
+  public static double leftWheelPosition = 0.2786;
 
-    public static int FrontLeftDriveCANID = 2;
-    public static int FrontLeftSteerCANID = 6;
+  // CAN IDs for all swerve motor controllers
+  public static int frontRightDriveCANID = 1;
+  public static int frontRightSteerCANID = 5;
 
-    public static int BackLeftDriveCANID = 3;
-    public static int BackLeftSteerCANID = 7;
+  public static int frontLeftDriveCANID = 2;
+  public static int frontLeftSteerCANID = 6;
 
-    public static int BackRightDriveCANID = 4;
-    public static int BackRightSteerCANID = 8;
+  public static int backLeftDriveCANID = 3;
+  public static int backLeftSteerCANID = 7;
+
+  public static int backRightDriveCANID = 4;
+  public static int backRightSteerCANID = 8;
 
 
-    // PID values for swerve PID loops
-    public static double DriveFeedForward = 0.000175;
-    public static double DriveProportional = 0.00001;
-    public static double DriveIntegral = 0.0000004;
-    public static double DriveDerivative = 0;
+  // PID values for swerve PID loops
+  public static double driveFeedForward = 0.000175;
+  public static double driveProportional = 0.00001;
+  public static double driveIntegral = 0.0000004;
+  public static double driveDerivative = 0;
 
-    public static double SteerFeedForward = 0;
-    public static double SteerProportional = 8;
-    public static double SteerIntegral = 0.01;
-    public static double SteerDerivative = 0.01;
+  public static double steerFeedForward = 0;
+  public static double steerProportional = 8;
+  public static double steerIntegral = 0.01;
+  public static double steerDerivative = 0.01;
 
-    // Number outputted by the steer encoders after 1 revolution
-    public static int SteerEncoderCountsPerRevolution = 1024;
+  // Charger PID values
+  public static double chargeProportional = 1;
+  public static double chargeIntegral = 1;
+  public static double chargeDerivative = 1;
 
-    // Swerve drive maximum velocity in m/s
-    public static double SwerveMaxVelocity = 1;
+  // Number outputted by the steer encoders after 1 revolution
+  public static int steerEncoderCountsPerRevolution = 1024;
 
-    // Swerve drive maximum acceleration in m/s²
-    public static double SwerveMaxAcceleration = 1;
+  // Swerve drive maximum velocity in m/s
+  public static double swerveMaxVelocity = 1;
+
+  // Swerve drive maximum acceleration in m/s²
+  public static double swerveMaxAcceleration = 1;
 }

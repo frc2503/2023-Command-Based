@@ -6,12 +6,6 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
-import frc.PathConverter.PathConverter;
-import frc.SwerveSubsystem.SwerveDrive;
-import frc.SwerveSubsystem.Wheel;
-import frc.robot.subsystems.RobotMechanisms;
-import frc.robot.subsystems.Tracking;
-import edu.wpi.first.wpilibj2.command.Command;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -21,11 +15,6 @@ import edu.wpi.first.wpilibj2.command.Command;
  */
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
-  private final Wheel WheelSubsystem = new Wheel(0, 0);
-  private final SwerveDrive SwerveDriveSubsystem = new SwerveDrive();
-  private final RobotMechanisms RobotMechanismsSubsystem = new RobotMechanisms();
-  private final Tracking TrackingSubsystem = new Tracking();
-  private final PathConverter AutonomousSubsystem = new PathConverter();
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {

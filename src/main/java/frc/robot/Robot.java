@@ -4,78 +4,63 @@
 
 package frc.robot;
 
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.shuffleboard.*;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+import edu.wpi.first.wpilibj.shuffleboard.SimpleWidget;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-
-import edu.wpi.first.networktables.*;
-import frc.PathConverter.PathConverter;
-import frc.SwerveSubsystem.SwerveDrive;
+import frc.pathconverter.PathConverter;
 import frc.robot.subsystems.Autonomous;
 import frc.robot.subsystems.RobotMechanisms;
-import frc.robot.subsystems.Tracking;
-
-
+import frc.swervesubsystem.SwerveDrive;
 
 public class Robot extends TimedRobot {
   // Define objects and variables
-  private Joystick LeftStick;
-  private Joystick RightStick;
+  private Joystick leftStick = new Joystick(0);
+  private Joystick rightStick = new Joystick(1);
 
-  private double RightStickX;
-  private double RightStickY;
-  private double RightStickTwist;
-  private double[] MotorCurrents;
-  private boolean ManualArmRead;
+  private double rightStickX;
+  private double rightStickY;
+  private double rightStickTwist;
+  private double[] motorCurrents = new double[] {0, 0, 0, 0};
+  private boolean manualArmRead = false;
 
-  public NetworkTableInstance Inst;
-  public NetworkTable DriverStation;
-  public NetworkTableEntry GyroAng;
-  private ShuffleboardTab LiveWindow;
+  public NetworkTableInstance inst = NetworkTableInstance.getDefault();
+  public NetworkTable driverStation;
+  public NetworkTableEntry gyroAng;
+  private ShuffleboardTab liveWindow = Shuffleboard.getTab("liveWindow");
 
-  private SimpleWidget FFGain;
-  private SimpleWidget PGain;
-  private SimpleWidget IGain;
-  private SimpleWidget DGain;
+  private SimpleWidget FFGain = liveWindow.add("FFGain", 0.000175);
+  private SimpleWidget PGain = liveWindow.add("PGain", 0.00001);
+  private SimpleWidget IGain = liveWindow.add("IGain", 0.0000004);
+  private SimpleWidget DGain = liveWindow.add("DGain", 0.0);
 
   @Override
   public void robotInit() {
-    // Instantiate an object for each class
+    // Initialize each class
     SwerveDrive.init();
     PathConverter.init();
     RobotMechanisms.init();
-    Tracking.init();
-    Autonomous.init();
-
-    // Assign joysticks to the "LeftStick" and "RightStick" objects
-    LeftStick = new Joystick(0);
-    RightStick = new Joystick(1);
-
-    Inst = NetworkTableInstance.getDefault();
-    ManualArmRead = false;
-
-    LiveWindow = Shuffleboard.getTab("LiveWindow");
-  
-    FFGain = LiveWindow.add("FFGain", 0.000175);
-    PGain = LiveWindow.add("PGain", 0.00001);
-    IGain = LiveWindow.add("IGain", 0.0000004);
-    DGain = LiveWindow.add("DGain", 0.0);
   }
 
   @Override
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
     
-    /**
+    /*
     RobotMechanisms.ArmExtendPIDController.setFF(FFGain.getEntry().getDouble(0));
     RobotMechanisms.ArmExtendPIDController.setP(PGain.getEntry().getDouble(0));
     RobotMechanisms.ArmExtendPIDController.setI(IGain.getEntry().getDouble(0));
     RobotMechanisms.ArmExtendPIDController.setD(DGain.getEntry().getDouble(0));
     */
     
-    //SwerveDrive.updatePIDValues(FFGain.getEntry().getDouble(0), PGain.getEntry().getDouble(0), IGain.getEntry().getDouble(0), DGain.getEntry().getDouble(0), 8.0, 0.01, 0.01);
+    //SwerveDrive.updatePIDValues(FFGain.getEntry().getDouble(0), PGain.getEntry().getDouble(0),
+    //    IGain.getEntry().getDouble(0), DGain.getEntry().getDouble(0), 8.0, 0.01, 0.01);
   }
  
   @Override
@@ -85,95 +70,95 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    SwerveDrive.GyroRotation2d = SwerveDrive.Gyro.getRotation2d().unaryMinus();
+    SwerveDrive.gyroRotation2d = SwerveDrive.gyro.getRotation2d().unaryMinus();
 
     // Assign stick inputs to variables, to prevent discrepancies
-    RightStickX = RightStick.getX();
-    RightStickY = RightStick.getY();
-    RightStickTwist = RightStick.getRawAxis(3);
+    rightStickX = rightStick.getX();
+    rightStickY = rightStick.getY();
+    rightStickTwist = rightStick.getRawAxis(3);
 
     // Create deadzones on the joysticks, to prevent stick drift
-    if (Math.abs(RightStickX) < 0.1) {
-      RightStickX = 0.0;
+    if (Math.abs(rightStickX) < 0.1) {
+      rightStickX = 0.0;
     }
-    if (Math.abs(RightStickY) < 0.1) {
-      RightStickY = 0.0;
+    if (Math.abs(rightStickY) < 0.1) {
+      rightStickY = 0.0;
     }
-    if (Math.abs(RightStickTwist) < 0.2) {
-      RightStickTwist = 0.0;
+    if (Math.abs(rightStickTwist) < 0.2) {
+      rightStickTwist = 0.0;
     }
 
-    if (LeftStick.getRawButton(2)) {
+    if (leftStick.getRawButton(2)) {
       //Tracking.centerOnPole();
-    }
-    else if (RobotMechanisms.DesiredState != "Charge") {
+    } else if (RobotMechanisms.desiredState != "Charge") {
       // Call swerveDrive() method, to do all the math and outputs for swerve drive
-      SwerveDrive.calculateSpeedsAndAngles(Math.copySign(Math.pow(RightStickX, 2.0), RightStickX) * Constants.SwerveMaxVelocity, (-Math.copySign(Math.pow(RightStickY, 2.0), RightStickY) * Constants.SwerveMaxVelocity), (Math.copySign(Math.pow(RightStickTwist, 2.0), RightStickTwist) * Constants.SwerveMaxVelocity), (1 - ((RightStick.getZ() + 1) / 2)), (1 - ((LeftStick.getZ() + 1) / 2)));
+      SwerveDrive.calculateSpeedsAndAngles(Math.copySign(Math.pow(rightStickX, 2.0), rightStickX) * Constants.swerveMaxVelocity,
+          (-Math.copySign(Math.pow(rightStickY, 2.0), rightStickY) * Constants.swerveMaxVelocity),
+          (Math.copySign(Math.pow(rightStickTwist, 2.0), rightStickTwist) * Constants.swerveMaxVelocity),
+          (1 - ((rightStick.getZ() + 1) / 2)), (1 - ((leftStick.getZ() + 1) / 2)));
       SwerveDrive.optimizeAndSetOutputs();
     }
 
-    SmartDashboard.putNumber("Gyro", SwerveDrive.GyroRotation2d.getDegrees());
+    SmartDashboard.putNumber("Gyro", SwerveDrive.gyroRotation2d.getDegrees());
 
-    MotorCurrents = new double[] {SwerveDrive.FrontLeft.Drive.getOutputCurrent(), SwerveDrive.FrontRight.Drive.getOutputCurrent(), SwerveDrive.BackLeft.Drive.getOutputCurrent(), SwerveDrive.BackRight.Drive.getOutputCurrent()};
-    SmartDashboard.putNumberArray("RobotDrive Motors", MotorCurrents);
+    motorCurrents[0] = SwerveDrive.frontLeft.drive.getOutputCurrent();
+    motorCurrents[1] = SwerveDrive.frontRight.drive.getOutputCurrent();
+    motorCurrents[2] = SwerveDrive.backLeft.drive.getOutputCurrent();
+    motorCurrents[3] = SwerveDrive.backRight.drive.getOutputCurrent();
+    SmartDashboard.putNumberArray("RobotDrive Motors", motorCurrents);
   
-    if (RightStick.getRawButtonPressed(2) == true) {
+    if (rightStick.getRawButtonPressed(2) == true) {
       RobotMechanisms.reset();
     }
-    if (LeftStick.getRawButtonPressed(5)) {
-      RobotMechanisms.DesiredState = "Stowed";
-      RobotMechanisms.ArmAngleMod = 0;
-      RobotMechanisms.ArmExtendMod = 0;
-    }
-    else if (LeftStick.getRawButtonPressed(2)) {
-      RobotMechanisms.DesiredState = "Grab";
-      RobotMechanisms.ArmAngleMod = 0;
-      RobotMechanisms.ArmExtendMod = 0;
-    }
-    else if (LeftStick.getRawButtonPressed(6)) {
-      RobotMechanisms.DesiredState = "Place1";
-      RobotMechanisms.ArmAngleMod = 0;
-      RobotMechanisms.ArmExtendMod = 0;
-    }
-    else if (LeftStick.getRawButtonPressed(4)) {
-      RobotMechanisms.DesiredState = "Place2";
-      RobotMechanisms.ArmAngleMod = 0;
-      RobotMechanisms.ArmExtendMod = 0;
-    }
-    else if (LeftStick.getRawButtonPressed(3)) {
-      RobotMechanisms.DesiredState = "High";
-      RobotMechanisms.ArmAngleMod = 0;
-      RobotMechanisms.ArmExtendMod = 0;
-    }
-    // else if (RightStick.getRawButtonPressed(3)){
+    if (leftStick.getRawButtonPressed(5)) {
+      RobotMechanisms.desiredState = "Stowed";
+      RobotMechanisms.armAngleMod = 0;
+      RobotMechanisms.armExtendMod = 0;
+    } else if (leftStick.getRawButtonPressed(2)) {
+      RobotMechanisms.desiredState = "Grab";
+      RobotMechanisms.armAngleMod = 0;
+      RobotMechanisms.armExtendMod = 0;
+    } else if (leftStick.getRawButtonPressed(6)) {
+      RobotMechanisms.desiredState = "Place1";
+      RobotMechanisms.armAngleMod = 0;
+      RobotMechanisms.armExtendMod = 0;
+    } else if (leftStick.getRawButtonPressed(4)) {
+      RobotMechanisms.desiredState = "Place2";
+      RobotMechanisms.armAngleMod = 0;
+      RobotMechanisms.armExtendMod = 0;
+    } else if (leftStick.getRawButtonPressed(3)) {
+      RobotMechanisms.desiredState = "High";
+      RobotMechanisms.armAngleMod = 0;
+      RobotMechanisms.armExtendMod = 0;
+    } // else if (rightStick.getRawButtonPressed(3)){
     //   RobotMechanisms.DesiredState = "Charge";
     //   RobotMechanisms.ArmAngleMod = 0;
     //   RobotMechanisms.ArmExtendMod = 0;
     // }
-    else if (RightStick.getRawButtonPressed(5)) {
-      SwerveDrive.FieldOrientedSwerveEnabled = !SwerveDrive.FieldOrientedSwerveEnabled;
-      System.out.println("Field oriented swerve state updated to " + SwerveDrive.FieldOrientedSwerveEnabled);
+    if (rightStick.getRawButtonPressed(5)) {
+      SwerveDrive.fieldOrientedSwerveEnabled = !SwerveDrive.fieldOrientedSwerveEnabled;
+      System.out.println("Field oriented swerve state updated to " + SwerveDrive.fieldOrientedSwerveEnabled);
     }
 
-    if (LeftStick.getPOV() == 0 & !ManualArmRead) {
-      ManualArmRead = true;
-      RobotMechanisms.ArmAngleMod += 0.5;
+    if (leftStick.getPOV() == 0 & !manualArmRead) {
+      manualArmRead = true;
+      RobotMechanisms.armAngleMod += 0.5;
     }
-    if (LeftStick.getPOV() == 180 & !ManualArmRead) {
-      ManualArmRead = true;
-      RobotMechanisms.ArmAngleMod -= 0.5;
+    if (leftStick.getPOV() == 180 & !manualArmRead) {
+      manualArmRead = true;
+      RobotMechanisms.armAngleMod -= 0.5;
     }
-    if (LeftStick.getPOV() == -1 & ManualArmRead) {
-      ManualArmRead = false;
+    if (leftStick.getPOV() == -1 & manualArmRead) {
+      manualArmRead = false;
     }
 
-    if (LeftStick.getRawButtonPressed(1)) {
-      RobotMechanisms.grabObject();
+    if (leftStick.getRawButtonPressed(1)) {
+      RobotMechanisms.toggleGrabber();
     }
-    if (RightStick.getRawButtonPressed(4)) {
+    if (rightStick.getRawButtonPressed(4)) {
       RobotMechanisms.extendLimelight();
     }
-    if (RightStick.getRawButtonPressed(6)) {
+    if (rightStick.getRawButtonPressed(6)) {
       RobotMechanisms.retractLimelight();
     }
 
@@ -182,16 +167,16 @@ public class Robot extends TimedRobot {
 
   //Autonomous right away
   @Override
-  public void autonomousInit(){
+  public void autonomousInit() {
     RobotMechanisms.extendLimelight();
-    Autonomous.Timer.stop();
-    Autonomous.Timer.reset();
+    Autonomous.timer.stop();
+    Autonomous.timer.reset();
   }
 
   //Autonomous repeat
   @Override
-  public void autonomousPeriodic(){
-    SwerveDrive.GyroRotation2d = SwerveDrive.Gyro.getRotation2d(); 
+  public void autonomousPeriodic() {
+    SwerveDrive.gyroRotation2d = SwerveDrive.gyro.getRotation2d().unaryMinus(); 
     Autonomous.runAutonomous();
   }
 }

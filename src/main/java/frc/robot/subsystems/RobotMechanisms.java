@@ -5,205 +5,223 @@
 package frc.robot.subsystems;
 
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.SparkMaxPIDController;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
-import com.revrobotics.SparkMaxRelativeEncoder;
 import com.revrobotics.CANSparkMax.ControlType;
-
-import edu.wpi.first.wpilibj.PneumaticsModuleType;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import com.revrobotics.SparkMaxPIDController;
+import com.revrobotics.SparkMaxRelativeEncoder;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
+import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.SwerveSubsystem.SwerveDrive;
+import frc.robot.Constants;
+import frc.swervesubsystem.SwerveDrive;
 
 public class RobotMechanisms extends SubsystemBase {
-  public static CANSparkMax ArmAngle;
-  public static SparkMaxPIDController ArmAnglePIDController;
-  public static CANSparkMax ArmExtend;
-  public static SparkMaxPIDController ArmExtendPIDController;
+  static CANSparkMax armAngle = new CANSparkMax(10, MotorType.kBrushless);
+  private static SparkMaxPIDController armAnglePIDController = armAngle.getPIDController();
+  private static CANSparkMax armExtend = new CANSparkMax(11, MotorType.kBrushless);
+  private static SparkMaxPIDController armExtendPIDController = armExtend.getPIDController();
 
-  private static Constraints ChargeConstraints;
-  private static ProfiledPIDController ChargePIDController;
+  private static Constraints chargeConstraints = new Constraints(Constants.swerveMaxVelocity, Constants.swerveMaxAcceleration);
+  private static ProfiledPIDController chargePIDController = new ProfiledPIDController(1, 0, 0, chargeConstraints);
 
-  private static Compressor Pump;
-  private static DoubleSolenoid Grabber;
-  private static DoubleSolenoid LimelightPiston;
+  private static Compressor pump = new Compressor(0, PneumaticsModuleType.CTREPCM);
+  private static DoubleSolenoid grabber = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 2, 3);
+  private static DoubleSolenoid limelightPiston = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1);
 
-  private static DigitalInput LimitSwitch;
-  private static boolean HasBeenZeroed;
+  private static DigitalInput limitSwitch = new DigitalInput(0);
+  private static boolean hasBeenZeroed = false;
 
-  public static String DesiredState;
-  private static double AngleToAdjust;
-  public static double ArmAngleMod;
-  public static double ArmExtendMod;
+  public static String desiredState = "";
+  private static double angleToAdjust;
+  public static double armAngleMod = 0;
+  public static double armExtendMod = 0;
 
   public RobotMechanisms() {
   }
 
   public static void init() {
-    DesiredState = "";
+    armAnglePIDController.setFeedbackDevice(armAngle.getEncoder(SparkMaxRelativeEncoder.Type.kHallSensor, 42));
+    armAnglePIDController.setOutputRange(-1, 1);
+    armAnglePIDController.setFF(0);
+    armAnglePIDController.setP(.06);
+    armAnglePIDController.setI(0);
+    armAnglePIDController.setD(0);
+    armAnglePIDController.setSmartMotionMinOutputVelocity(0, 0);
+    armAnglePIDController.setSmartMotionMaxVelocity(120, 0);
+    armAnglePIDController.setSmartMotionMaxAccel(50, 0);
 
-    ArmAngleMod = 0;
-    ArmExtendMod = 0;
+    armExtendPIDController.setFeedbackDevice(armExtend.getEncoder(SparkMaxRelativeEncoder.Type.kHallSensor, 42));
+    armExtendPIDController.setOutputRange(-1, 1);
+    armExtendPIDController.setFF(0);
+    armExtendPIDController.setP(.06);
+    armExtendPIDController.setI(0);
+    armExtendPIDController.setD(0);
+    armExtendPIDController.setSmartMotionMinOutputVelocity(0, 0);
+    armExtendPIDController.setSmartMotionMaxVelocity(120, 0);
 
-    ArmAngle = new CANSparkMax(10, MotorType.kBrushless);
-    ArmAnglePIDController = ArmAngle.getPIDController();
-    ArmExtend = new CANSparkMax(11, MotorType.kBrushless);
-    ArmExtendPIDController = ArmExtend.getPIDController();
-
-    ArmAnglePIDController.setFeedbackDevice(ArmAngle.getEncoder(SparkMaxRelativeEncoder.Type.kHallSensor, 42));
-    ArmAnglePIDController.setOutputRange(-1, 1);
-    ArmAnglePIDController.setFF(0);
-    ArmAnglePIDController.setP(.06);
-    ArmAnglePIDController.setI(0);
-    ArmAnglePIDController.setD(0);
-    ArmAnglePIDController.setSmartMotionMinOutputVelocity(0, 0);
-    ArmAnglePIDController.setSmartMotionMaxVelocity(120, 0);
-    ArmAnglePIDController.setSmartMotionMaxAccel(50, 0);
-
-    ArmExtendPIDController.setFeedbackDevice(ArmExtend.getEncoder(SparkMaxRelativeEncoder.Type.kHallSensor, 42));
-    ArmExtendPIDController.setOutputRange(-1, 1);
-    ArmExtendPIDController.setFF(0);
-    ArmExtendPIDController.setP(.06);
-    ArmExtendPIDController.setI(0);
-    ArmExtendPIDController.setD(0);
-    ArmExtendPIDController.setSmartMotionMinOutputVelocity(0, 0);
-    ArmExtendPIDController.setSmartMotionMaxVelocity(120, 0);
-
-    ChargeConstraints = new Constraints(1, 2);
-    ChargePIDController = new ProfiledPIDController(1, 0, 0, ChargeConstraints);
-
-    Pump = new Compressor(0, PneumaticsModuleType.CTREPCM);
-    Pump.enableDigital();
-    Grabber = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 2, 3);
-    Grabber.set(Value.kForward);
-    LimelightPiston = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1);
-    LimelightPiston.set(Value.kForward);
-
-    LimitSwitch = new DigitalInput(0);
-    HasBeenZeroed = false;
+    pump.enableDigital();
+    grabber.set(Value.kForward);
+    limelightPiston.set(Value.kForward);
   }
 
+  /**
+   * Make the robot go to the desired state.
+   */
   public static void goToDesiredState() {   
-    if (HasBeenZeroed) {
-      if (DesiredState.equals("Stowed")) {
+    if (hasBeenZeroed) {
+      if (desiredState.equals("Stowed")) {
         closeGrabber();
-        if (Math.abs(ArmExtend.getEncoder().getPosition()) > .6) {
-          ArmExtendPIDController.setReference(0, ControlType.kPosition);
-        }
-        else {
-          ArmAnglePIDController.setReference(0, ControlType.kPosition);
-          ArmExtendPIDController.setReference(0, ControlType.kPosition);
-        }
-      }
-
-      if (DesiredState.equals("Grab")) {
-        if (ArmAngle.getEncoder().getPosition() < -7 & ArmExtend.getEncoder().getPosition() < -43) {
-          ArmExtendPIDController.setReference(-52, ControlType.kPosition);
-        }
-        else if (ArmAngle.getEncoder().getPosition() > -3 & ArmExtend.getEncoder().getPosition() < -.6) {
-          ArmExtendPIDController.setReference(0, ControlType.kPosition);
-        }
-        else if (ArmAngle.getEncoder().getPosition() > -4) {
-          ArmAnglePIDController.setReference(-6.5 - ArmAngleMod, ControlType.kPosition);
-        }
-        else {
-          ArmAnglePIDController.setReference(-6.5 - ArmAngleMod, ControlType.kPosition);
-          ArmExtendPIDController.setReference(-52, ControlType.kPosition);
+        if (Math.abs(armExtend.getEncoder().getPosition()) > .6) {
+          armExtendPIDController.setReference(0, ControlType.kPosition);
+        } else {
+          armAnglePIDController.setReference(0, ControlType.kPosition);
+          armExtendPIDController.setReference(0, ControlType.kPosition);
         }
       }
 
-      if (DesiredState.equals("Place1")) {
+      if (desiredState.equals("Grab")) {
+        if (armAngle.getEncoder().getPosition() < -7 & armExtend.getEncoder().getPosition() < -43) {
+          armExtendPIDController.setReference(-52, ControlType.kPosition);
+        } else if (armAngle.getEncoder().getPosition() > -3 & armExtend.getEncoder().getPosition() < -.6) {
+          armExtendPIDController.setReference(0, ControlType.kPosition);
+        } else if (armAngle.getEncoder().getPosition() > -4) {
+          armAnglePIDController.setReference(-6.5 - armAngleMod, ControlType.kPosition);
+        } else {
+          armAnglePIDController.setReference(-6.5 - armAngleMod, ControlType.kPosition);
+          armExtendPIDController.setReference(-52, ControlType.kPosition);
+        }
+      }
+
+      if (desiredState.equals("Place1")) {
         System.out.println("Attempting Place1 Command");
-        if (ArmAngle.getEncoder().getPosition() > -6) {
-          ArmAnglePIDController.setReference(-19 - ArmAngleMod, ControlType.kPosition);
-          ArmExtendPIDController.setReference(0, ControlType.kPosition);
-        }
-        else {
-          ArmAnglePIDController.setReference(-19 - ArmAngleMod, ControlType.kPosition);
-          ArmExtendPIDController.setReference(-37, ControlType.kPosition);
+        if (armAngle.getEncoder().getPosition() > -6) {
+          armAnglePIDController.setReference(-19 - armAngleMod, ControlType.kPosition);
+          armExtendPIDController.setReference(0, ControlType.kPosition);
+        } else {
+          armAnglePIDController.setReference(-19 - armAngleMod, ControlType.kPosition);
+          armExtendPIDController.setReference(-37, ControlType.kPosition);
         }
       }
 
-      if (DesiredState.equals("Place2")) {
-        if (ArmAngle.getEncoder().getPosition() > -6) {
-          ArmAnglePIDController.setReference(-23 - ArmAngleMod, ControlType.kPosition);
-          ArmExtendPIDController.setReference(0, ControlType.kPosition);
-        }
-        else {
-          ArmAnglePIDController.setReference(-23 - ArmAngleMod, ControlType.kPosition);
-          ArmExtendPIDController.setReference(-85, ControlType.kPosition);
-        }
-      }
-      if (DesiredState.equals("High")) {
-        if (ArmAngle.getEncoder().getPosition() > -6) {
-          ArmAnglePIDController.setReference(-23 - ArmAngleMod, ControlType.kPosition);
-          ArmExtendPIDController.setReference(0, ControlType.kPosition);
-        }
-        else {
-          ArmAnglePIDController.setReference(-23 - ArmAngleMod, ControlType.kPosition);
-          ArmExtendPIDController.setReference(0, ControlType.kPosition);
+      if (desiredState.equals("Place2")) {
+        if (armAngle.getEncoder().getPosition() > -6) {
+          armAnglePIDController.setReference(-23 - armAngleMod, ControlType.kPosition);
+          armExtendPIDController.setReference(0, ControlType.kPosition);
+        } else {
+          armAnglePIDController.setReference(-23 - armAngleMod, ControlType.kPosition);
+          armExtendPIDController.setReference(-85, ControlType.kPosition);
         }
       }
-      if (DesiredState.equals("Charge")) {
-        if (Math.abs(SwerveDrive.Gyro.getRoll()) > Math.abs(SwerveDrive.Gyro.getPitch())) {
-          AngleToAdjust = SwerveDrive.Gyro.getRoll();
+      if (desiredState.equals("High")) {
+        if (armAngle.getEncoder().getPosition() > -6) {
+          armAnglePIDController.setReference(-23 - armAngleMod, ControlType.kPosition);
+          armExtendPIDController.setReference(0, ControlType.kPosition);
+        } else {
+          armAnglePIDController.setReference(-23 - armAngleMod, ControlType.kPosition);
+          armExtendPIDController.setReference(0, ControlType.kPosition);
         }
-        else {
-          AngleToAdjust = SwerveDrive.Gyro.getPitch();
+      }
+      if (desiredState.equals("charge")) {
+        if (Math.abs(SwerveDrive.gyro.getRoll()) > Math.abs(SwerveDrive.gyro.getPitch())) {
+          angleToAdjust = SwerveDrive.gyro.getRoll();
+        } else {
+          angleToAdjust = SwerveDrive.gyro.getPitch();
         }
-        System.out.println(AngleToAdjust);
-        SwerveDrive.calculateSpeedsAndAngles(0, ChargePIDController.calculate(AngleToAdjust, 0)/300, 0, 1, 1);
+        System.out.println(angleToAdjust);
+        SwerveDrive.calculateSpeedsAndAngles(0, chargePIDController.calculate(angleToAdjust, 0)/300, 0, 1, 1);
         SwerveDrive.optimizeAndSetOutputs();
-        System.out.println("Output:" + ChargePIDController.calculate(AngleToAdjust * 20, 0));
+        System.out.println("Output:" + chargePIDController.calculate(angleToAdjust * 20, 0));
       }
     }
     else {
-      if (!LimitSwitch.get()) {
-        HasBeenZeroed = true;
-        ArmExtend.getEncoder().setPosition(0);
-        ArmExtendPIDController.setReference(0, ControlType.kPosition);
+      if (!limitSwitch.get()) {
+        hasBeenZeroed = true;
+        armExtend.getEncoder().setPosition(0);
+        armExtendPIDController.setReference(0, ControlType.kPosition);
       }
       else {
-        ArmExtend.set(.2);
+        armExtend.set(.2);
       }
     } 
   }
 
+  /**
+   * Check if the robot is at the desired state.
+   * 
+   * @return A boolean value that is true if the robot is at the desired state, and is false if not.
+   */
   public static boolean isAtDesiredState() {
-    if(DesiredState == "Stowed" & Math.abs(ArmExtend.getEncoder().getPosition()) <= .6 & Math.abs(ArmExtend.getEncoder().getPosition()) <= 1) return true;
-    if(DesiredState == "Grab" & Math.abs(Math.abs(ArmAngle.getEncoder().getPosition()) - 6.5) <= 1 & Math.abs(Math.abs(ArmExtend.getEncoder().getPosition()) - 41) <= 1) return true;
-    if(DesiredState == "Place1" & Math.abs(Math.abs(ArmAngle.getEncoder().getPosition()) - 17) <= 1 & Math.abs(Math.abs(ArmExtend.getEncoder().getPosition()) - 37) <= 1) return true;
-    if(DesiredState == "Place2" & Math.abs(Math.abs(ArmAngle.getEncoder().getPosition()) - 21) <= 1 & Math.abs(Math.abs(ArmExtend.getEncoder().getPosition()) - 85) <= 1) return true;
-    if(DesiredState == "High" & Math.abs(Math.abs(ArmAngle.getEncoder().getPosition()) - 21) <= 1 & Math.abs(Math.abs(ArmExtend.getEncoder().getPosition())) <= 1) return true;
-    else return false;
+    boolean ret = false;
+    if (desiredState == "Stowed" & Math.abs(armExtend.getEncoder().getPosition()) <= .6 & Math.abs(armExtend.getEncoder().getPosition()) <= 1) {
+      ret = true;
+    }
+    if (desiredState == "Grab" & Math.abs(Math.abs(armAngle.getEncoder().getPosition()) - 6.5) <= 1
+        & Math.abs(Math.abs(armExtend.getEncoder().getPosition()) - 41) <= 1) {
+      ret = true;
+    }
+    if (desiredState == "Place1" & Math.abs(Math.abs(armAngle.getEncoder().getPosition()) - 17) <= 1
+        & Math.abs(Math.abs(armExtend.getEncoder().getPosition()) - 37) <= 1) {
+      ret = true;
+    }
+    if (desiredState == "Place2" & Math.abs(Math.abs(armAngle.getEncoder().getPosition()) - 21) <= 1
+        & Math.abs(Math.abs(armExtend.getEncoder().getPosition()) - 85) <= 1) {
+      ret = true;
+    }
+    if (desiredState == "High" & Math.abs(Math.abs(armAngle.getEncoder().getPosition()) - 21) <= 1
+        & Math.abs(Math.abs(armExtend.getEncoder().getPosition())) <= 1) {
+      ret = true;
+    }
+    return ret;
   }
 
-  public static void grabObject() {
-    Grabber.toggle();
+  /**
+   * Command the robot to toggle the grabber.
+   */
+  public static void toggleGrabber() {
+    grabber.toggle();
   }
+
+  /**
+   * Command the robot to close the grabber.
+   */
   public static void closeGrabber() {
-    if (Grabber.get() != Value.kForward) {
-      Grabber.set(Value.kForward);
+    if (grabber.get() != Value.kForward) {
+      grabber.set(Value.kForward);
     }
-  }
-  public static void openGrabber() {
-    if (Grabber.get() != Value.kReverse) {
-      Grabber.set(Value.kReverse);
-    }
-  }
-  public static void extendLimelight() {
-    LimelightPiston.set(Value.kReverse);
-  }
-  public static void retractLimelight() {
-    LimelightPiston.set(Value.kForward);
   }
 
+  /**
+   * Command the robot to open the grabber.
+   */
+  public static void openGrabber() {
+    if (grabber.get() != Value.kReverse) {
+      grabber.set(Value.kReverse);
+    }
+  }
+
+  /**
+   * Command the robot to extend the Limelight piston.
+   */
+  public static void extendLimelight() {
+    limelightPiston.set(Value.kReverse);
+  }
+
+  /**
+   * Command the robot to retract the Limelight piston.
+   */
+  public static void retractLimelight() {
+    limelightPiston.set(Value.kForward);
+  }
+
+  /**
+   * Reset the robot's gyroscope.
+   */
   public static void reset() {
-    SwerveDrive.Gyro.reset();
+    SwerveDrive.gyro.reset();
   }
 }

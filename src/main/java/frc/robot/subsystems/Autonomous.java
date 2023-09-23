@@ -5,104 +5,96 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.wpilibj.Timer;
-
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.PathConverter.PathConverter;
-import frc.SwerveSubsystem.SwerveDrive;
+import frc.pathconverter.PathConverter;
+import frc.swervesubsystem.SwerveDrive;
 
 public class Autonomous extends SubsystemBase {
-  public static int AutoStage;
-  private static int SwerveControllerCommandIndex;
-  private static Boolean IsScheduled;
-  public static Timer Timer;
+  public static int autoStage = 0;
+  private static int swerveControllerCommandIndex = 0;
+  private static Boolean isScheduled = false;
+  public static Timer timer = new Timer();
 
   public Autonomous() {}
 
-  public static void init() {
-    AutoStage = 0;
-    SwerveControllerCommandIndex = 0;
-    IsScheduled = false;
-    Timer = new Timer();
-  }
-
   public static void runAutonomous() {
-    if (AutoStage <= PathConverter.AutoOrder.size() - 1) {
-      if (PathConverter.AutoOrder.get(AutoStage).equals("Move")) {
-        if (!IsScheduled) {
+    if (autoStage <= PathConverter.autoOrder.size() - 1) {
+      if (PathConverter.autoOrder.get(autoStage).equals("Move")) {
+        if (!isScheduled) {
           System.out.println("Move");
-          PathConverter.SwerveControllerCommands.get(SwerveControllerCommandIndex).andThen(() -> SwerveDrive.stop()).schedule();
-          IsScheduled = true;
+          PathConverter.swerveControllerCommands.get(swerveControllerCommandIndex).andThen(() -> SwerveDrive.stop()).schedule();
+          isScheduled = true;
         }
-        if (PathConverter.SwerveControllerCommands.get(SwerveControllerCommandIndex).isFinished()) {
-          AutoStage++;
-          SwerveControllerCommandIndex++;
-          IsScheduled = false;
+        if (PathConverter.swerveControllerCommands.get(swerveControllerCommandIndex).isFinished()) {
+          autoStage++;
+          swerveControllerCommandIndex++;
+          isScheduled = false;
         }
       }
     }
-    if (AutoStage <= PathConverter.AutoOrder.size() - 1) {
-      if (PathConverter.AutoOrder.get(AutoStage).equals("Grab Cone")) {
+    if (autoStage <= PathConverter.autoOrder.size() - 1) {
+      if (PathConverter.autoOrder.get(autoStage).equals("Grab Cone")) {
         System.out.println("Grab Cone");
-        RobotMechanisms.DesiredState = "Grab";
+        RobotMechanisms.desiredState = "Grab";
         RobotMechanisms.openGrabber();
         if(RobotMechanisms.isAtDesiredState()) {
-          if(Timer.get() > 0) { //If we are grabbing the cone, we don't want to open grabber, nor keep moving
+          if(timer.get() > 0) { //If we are grabbing the cone, we don't want to open grabber, nor keep moving
             Tracking.centerOnCone();
           }
-          if(Math.abs(Tracking.IntakeTargetOffsetV.getDouble(0)) <= 20) {//moved towards cone
-            if(Timer.get() <= 0.0) {
+          if(Math.abs(Tracking.intakeTargetOffsetV.getDouble(0)) <= 20) {//moved towards cone
+            if(timer.get() <= 0.0) {
               RobotMechanisms.closeGrabber();
-              Timer.start();
+              timer.start();
             }
-            if(Timer.get() >= 0.1) { //waited for grabber to close
-              RobotMechanisms.DesiredState = "High";
-              AutoStage++;
-              Timer.stop();
-              Timer.reset();
+            if(timer.get() >= 0.1) { //waited for grabber to close
+              RobotMechanisms.desiredState = "High";
+              autoStage++;
+              timer.stop();
+              timer.reset();
             }
           }
         }
       }
     }
-    if (AutoStage <= PathConverter.AutoOrder.size() - 1) {
-      if (PathConverter.AutoOrder.get(AutoStage).equals("Grab Cube")) {
+    if (autoStage <= PathConverter.autoOrder.size() - 1) {
+      if (PathConverter.autoOrder.get(autoStage).equals("Grab Cube")) {
         System.out.println("Grab Cube");
-        RobotMechanisms.DesiredState = "Grab";
+        RobotMechanisms.desiredState = "Grab";
         RobotMechanisms.openGrabber();
         if(RobotMechanisms.isAtDesiredState()) {
-          if(Timer.get() > 0) { //If we are grabbing the cone, we don't want to open grabber, nor keep moving
+          if(timer.get() > 0) { //If we are grabbing the cone, we don't want to open grabber, nor keep moving
             Tracking.centerOnCube();
           }
-          if(Math.abs(Tracking.IntakeTargetOffsetV.getDouble(0)) <= 20) {//moved towards cone
-            if(Timer.get() <= 0.0) {
+          if(Math.abs(Tracking.intakeTargetOffsetV.getDouble(0)) <= 20) {//moved towards cone
+            if(timer.get() <= 0.0) {
               RobotMechanisms.closeGrabber();
-              Timer.start();
+              timer.start();
             }
-            if(Timer.get() >= 0.1) { //waited for grabber to close
-              RobotMechanisms.DesiredState = "High";
-              AutoStage++;
-              Timer.stop();
-              Timer.reset();
+            if(timer.get() >= 0.1) { //waited for grabber to close
+              RobotMechanisms.desiredState = "High";
+              autoStage++;
+              timer.stop();
+              timer.reset();
             }
           }
         }
       }
     }
-    if (AutoStage <= PathConverter.AutoOrder.size() - 1) {
-      if (PathConverter.AutoOrder.get(AutoStage).equals("Place Cone")) {
+    if (autoStage <= PathConverter.autoOrder.size() - 1) {
+      if (PathConverter.autoOrder.get(autoStage).equals("Place Cone")) {
         System.out.println("Place Cone");
-        RobotMechanisms.DesiredState = "Place1";
-        System.out.println("Arm Angle: " + RobotMechanisms.ArmAngle.getEncoder().getPosition());
+        RobotMechanisms.desiredState = "Place1";
+        System.out.println("Arm Angle: " + RobotMechanisms.armAngle.getEncoder().getPosition());
         if(RobotMechanisms.isAtDesiredState()) {
-          if(Timer.get() <= 0.0) {
+          if(timer.get() <= 0.0) {
             RobotMechanisms.openGrabber();
-            Timer.start();
+            timer.start();
           }
-          if(Timer.get() >= 0.2) { //wait for grabber to open
-            RobotMechanisms.DesiredState = "Grab";
-            AutoStage++;
-            Timer.stop();
-            Timer.reset();
+          if(timer.get() >= 0.2) { //wait for grabber to open
+            RobotMechanisms.desiredState = "Grab";
+            autoStage++;
+            timer.stop();
+            timer.reset();
           }
           // Tracking.centerOnPole();
           // if(Math.abs(Tracking.ArmTargetOffsetH.getDouble(0)) <= 20) {
@@ -119,24 +111,24 @@ public class Autonomous extends SubsystemBase {
         }
       }
     }
-    if (AutoStage <= PathConverter.AutoOrder.size() - 1) {
-      if (PathConverter.AutoOrder.get(AutoStage).equals("Place Cube")) {
+    if (autoStage <= PathConverter.autoOrder.size() - 1) {
+      if (PathConverter.autoOrder.get(autoStage).equals("Place Cube")) {
         System.out.println("Place Cube");
-        RobotMechanisms.DesiredState = "Place1";
+        RobotMechanisms.desiredState = "Place1";
         if(RobotMechanisms.isAtDesiredState()) {
           Tracking.centerOnPlatform();
-          if(Math.abs(Tracking.ArmTargetOffsetH.getDouble(0)) <= 20) {
+          if(Math.abs(Tracking.armTargetOffsetH.getDouble(0)) <= 20) {
             RobotMechanisms.openGrabber();
-            RobotMechanisms.DesiredState = "High";
-            AutoStage++;
+            RobotMechanisms.desiredState = "High";
+            autoStage++;
           }
         }
       }
     }
-    if (AutoStage <= PathConverter.AutoOrder.size() - 1) {
-      if (PathConverter.AutoOrder.get(AutoStage).equals("Charge")) {
+    if (autoStage <= PathConverter.autoOrder.size() - 1) {
+      if (PathConverter.autoOrder.get(autoStage).equals("Charge")) {
         System.out.println("Charge");
-        AutoStage++;
+        autoStage++;
       }
     }
     
