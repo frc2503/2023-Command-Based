@@ -13,11 +13,15 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import frc.robot.commands.Arm.Grab;
+import frc.robot.commands.Arm.High;
+import frc.robot.commands.Arm.Low;
+import frc.robot.commands.Arm.Stow;
+import frc.robot.commands.Autonomous.CenterAndPlaceConeHigh;
+import frc.robot.commands.Autonomous.CenterAndPlaceConeLow;
+import frc.robot.commands.Autonomous.CenterAndPlaceCubeHigh;
+import frc.robot.commands.Autonomous.CenterAndPlaceCubeLow;
 import frc.robot.commands.Drivetrain.Drive;
-import frc.robot.commands.RobotMechanisms.Grab;
-import frc.robot.commands.RobotMechanisms.PlaceHigh;
-import frc.robot.commands.RobotMechanisms.PlaceLow;
-import frc.robot.commands.RobotMechanisms.Stow;
 import frc.robot.subsystems.Arm;
 import frc.robot.subsystems.Tracking;
 import frc.swervesubsystem.SwerveDrive;
@@ -57,8 +61,10 @@ public class RobotContainer {
   public RobotContainer() {
     NamedCommands.registerCommand("Stow", new Stow(ARM));
     NamedCommands.registerCommand("Grab", new Grab(ARM));
-    NamedCommands.registerCommand("PlaceLow", new PlaceLow(ARM));
-    NamedCommands.registerCommand("PlaceHigh", new PlaceHigh(ARM));
+    NamedCommands.registerCommand("PlaceConeHigh", new CenterAndPlaceConeHigh(SWERVE_DRIVE, ARM, TRACKING));
+    NamedCommands.registerCommand("PlaceConeLow", new CenterAndPlaceConeLow(SWERVE_DRIVE, ARM, TRACKING));
+    NamedCommands.registerCommand("PlaceCubeHigh", new CenterAndPlaceCubeHigh(SWERVE_DRIVE, ARM, TRACKING));
+    NamedCommands.registerCommand("PlaceCubeLow", new CenterAndPlaceCubeLow(SWERVE_DRIVE, ARM, TRACKING));
     autoChooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData("Auto Chooser", autoChooser);
     configureBindings();
@@ -74,9 +80,9 @@ public class RobotContainer {
     rightStickButton6.onTrue(new InstantCommand(Arm::retractLimelight));
     leftStickTrigger.onTrue(new InstantCommand(Arm::toggleGrabber));
     leftStickButton2.onTrue(new Grab(ARM));
-    leftStickButton4.onTrue(new PlaceHigh(ARM));
+    leftStickButton4.onTrue(new High(ARM));
     leftStickButton5.onTrue(new Stow(ARM));
-    leftStickButton6.onTrue(new PlaceLow(ARM));
+    leftStickButton6.onTrue(new Low(ARM));
   }
 
   public Command getAutonomousCommand() {

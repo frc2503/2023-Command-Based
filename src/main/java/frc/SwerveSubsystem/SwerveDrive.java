@@ -232,4 +232,9 @@ public class SwerveDrive extends SubsystemBase{
 
     optimizeAndSetOutputs();
   }
+
+  public static void stop() {
+    calculateSpeedsAndAngles(0, 0, 0, 0, 0, true);
+    optimizeAndSetOutputs();
+  }
 }

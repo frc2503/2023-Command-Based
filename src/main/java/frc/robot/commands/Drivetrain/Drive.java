@@ -25,7 +25,7 @@ public class Drive extends CommandBase {
   private double translationMod;
   private double rotationMod;
   private boolean isFieldOriented;
-  /** Creates a new Drive. */
+
   public Drive(SwerveDrive swerveDrive, DoubleSupplier xTranslationSupplier,
       DoubleSupplier yTranslationSupplier, DoubleSupplier rotationSupplier,
       DoubleSupplier translationModSupplier, DoubleSupplier rotationModSupplier,
@@ -77,8 +77,7 @@ public class Drive extends CommandBase {
   // Called once the command ends or is interrupted.
   @Override
   public void end(boolean interrupted) {
-    SwerveDrive.calculateSpeedsAndAngles(0, 0, 0, 0, 0, true);
-    SwerveDrive.optimizeAndSetOutputs();
+    SwerveDrive.stop();
   }
 
   // Returns true when the command should end.

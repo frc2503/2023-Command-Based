@@ -2,15 +2,15 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package frc.robot.commands.RobotMechanisms;
+package frc.robot.commands.Arm;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.subsystems.Arm;
 
-public class Grab extends CommandBase {
+public class Low extends CommandBase {
   boolean isFinished = false;
-  /** Creates a new Grab. */
-  public Grab(Arm arm) {
+
+  public Low(Arm arm) {
     addRequirements(arm);
   }
 
@@ -25,7 +25,7 @@ public class Grab extends CommandBase {
   @Override
   public void execute() {
     if (Arm.hasBeenZeroed) {
-      isFinished = Arm.grab();
+      isFinished = Arm.placeLow();
     } else {
       isFinished = true;
     }

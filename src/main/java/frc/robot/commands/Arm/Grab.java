@@ -2,27 +2,33 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package frc.robot.commands.RobotMechanisms;
+package frc.robot.commands.Arm;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.subsystems.Arm;
 
-public class ZeroArm extends CommandBase {
-  /** Creates a new ZeroArm. */
-  public ZeroArm(Arm arm) {
+public class Grab extends CommandBase {
+  boolean isFinished = false;
+  
+  public Grab(Arm arm) {
     addRequirements(arm);
   }
 
   // Called when the command is initially scheduled.
   @Override
   public void initialize() {
-    Arm.hasBeenZeroed = false;
+    Arm.armAngleMod = 0;
+    Arm.armExtendMod = 0;
   }
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    Arm.hasBeenZeroed = Arm.zeroArm();
+    if (Arm.hasBeenZeroed) {
+      isFinished = Arm.grab();
+    } else {
+      isFinished = true;
+    }
   }
 
   // Called once the command ends or is interrupted.
@@ -32,6 +38,6 @@ public class ZeroArm extends CommandBase {
   // Returns true when the command should end.
   @Override
   public boolean isFinished() {
-    return Arm.hasBeenZeroed;
+    return isFinished;
   }
 }
