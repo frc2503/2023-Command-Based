@@ -4,10 +4,12 @@
 
 package frc.swervesubsystem;
 
-import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.kauailabs.navx.frc.AHRS;
-import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
+import com.pathplanner.lib.util.PIDConstants;
+import com.pathplanner.lib.util.ReplanningConfig;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -23,7 +25,7 @@ import frc.robot.Constants;
 * Holds most code for the swerve drive.
 * Mostly exists to reduce verbosity in Robot.java, but it also helps prevent people from accidentally messing the code up.
  */
-public class SwerveDrive extends SubsystemBase {
+public class SwerveDrive extends SubsystemBase{
   // Define all objects and varibles used by this class
   public static AHRS gyro = new AHRS(SerialPort.Port.kMXP);
   public static Rotation2d gyroRotation2d;
@@ -35,45 +37,22 @@ public class SwerveDrive extends SubsystemBase {
   private static SwerveModuleState[] moduleStates;
   public static SwerveModulePosition[] modulePositions;
   
-  public static Wheel frontRight = new Wheel(Constants.frontWheelPosition, Constants.rightWheelPosition);
-  public static Wheel frontLeft = new Wheel(Constants.frontWheelPosition, Constants.leftWheelPosition);
-  public static Wheel backLeft = new Wheel(Constants.backWheelPosition, Constants.leftWheelPosition);
-  public static Wheel backRight = new Wheel(Constants.backWheelPosition, Constants.rightWheelPosition);
-
-  public static boolean fieldOrientedSwerveEnabled = true;
+  public static Wheel frontRight = new Wheel(Constants.frontRightDriveCANID,
+  Constants.frontRightSteerCANID, Constants.frontWheelPosition, Constants.rightWheelPosition);
+  public static Wheel frontLeft = new Wheel(Constants.frontLeftDriveCANID,
+  Constants.frontLeftSteerCANID, Constants.frontWheelPosition, Constants.leftWheelPosition);
+  public static Wheel backLeft = new Wheel(Constants.backLeftDriveCANID,
+  Constants.backLeftSteerCANID, Constants.backWheelPosition, Constants.leftWheelPosition);
+  public static Wheel backRight = new Wheel(Constants.backRightDriveCANID, 
+  Constants.backRightSteerCANID, Constants.backWheelPosition, Constants.rightWheelPosition);
 
   /**
    * Initialize all variables, objects, and methods for a created SwerveDrive object.
    */
   public SwerveDrive() {
-  }
-
-  /**
-   * Initialize all variables, objects, and methods for the SwerveDrive class.
-   */
-  public static void init() {
     // Initialize and zero gyro
     gyro.calibrate();
-    gyro.reset();
-    gyroRotation2d = gyro.getRotation2d();
-
-    frontRight.drive = new CANSparkMax(Constants.frontRightDriveCANID, MotorType.kBrushless);
-    frontRight.steer = new TalonSRX(Constants.frontRightSteerCANID);
-    frontLeft.drive = new CANSparkMax(Constants.frontLeftDriveCANID, MotorType.kBrushless);
-    frontLeft.steer = new TalonSRX(Constants.frontLeftSteerCANID);
-    backRight.drive = new CANSparkMax(Constants.backRightDriveCANID, MotorType.kBrushless);
-    backRight.steer = new TalonSRX(Constants.backRightSteerCANID);
-    backLeft.drive = new CANSparkMax(Constants.backLeftDriveCANID, MotorType.kBrushless);
-    backLeft.steer = new TalonSRX(Constants.backLeftSteerCANID);
-    
-    frontRight.initEncodersAndPIDControllers();
-    frontLeft.initEncodersAndPIDControllers();
-    backLeft.initEncodersAndPIDControllers();
-    backRight.initEncodersAndPIDControllers();
-
-    updatePIDValues(Constants.driveFeedForward, Constants.driveProportional,
-        Constants.driveIntegral, Constants.driveDerivative, Constants.steerFeedForward,
-        Constants.steerProportional, Constants.steerIntegral, Constants.steerDerivative);
+    resetGyro();
     
     // Pass in the reported positions from each module, to prevent any weird offsets
     modulePositions = new SwerveModulePosition[] {frontRight.getPosition(),
@@ -87,6 +66,22 @@ public class SwerveDrive extends SubsystemBase {
     // Pass in wheel module locations, as well as initial robot angle and position for field oriented drive
     odometry = new SwerveDriveOdometry(kinematics, gyroRotation2d,
         modulePositions, new Pose2d(0, 0, new Rotation2d()));
+
+    AutoBuilder.configureHolonomic(this::getPose, this::resetPose, this::getRobotRelativeSpeeds,
+        this::driveRobotRelative, new HolonomicPathFollowerConfig(new PIDConstants(5.0, 0.0, 0.0),
+        new PIDConstants(5.0, 0.0, 0.0),Constants.swerveMaxVelocity,
+        Math.sqrt(Math.pow(Constants.frontWheelPosition, 2) + Math.pow(Constants.rightWheelPosition, 2)),
+        new ReplanningConfig()), this);
+  }
+
+  @Override
+  public void periodic() {
+    gyroRotation2d = gyro.getRotation2d().unaryMinus();
+  }
+
+  public static void resetGyro() {
+    gyro.reset();
+    gyroRotation2d = gyro.getRotation2d().unaryMinus();
   }
 
   /**
@@ -130,12 +125,12 @@ public class SwerveDrive extends SubsystemBase {
    * @param spinMod
    *     Number to multiply the rotation speed of the robot by, to modify speed while driving
    */
-  public static void calculateSpeedsAndAngles(double x, double y, double spin, double xyMod, double spinMod) {
+  public static void calculateSpeedsAndAngles(double x, double y, double spin, double xyMod, double rotationMod, boolean isFieldOriented) {
     // Set the desired speeds for the robot, we also pass in the gyro angle for field oriented drive
-    if (fieldOrientedSwerveEnabled) {
-      speeds = ChassisSpeeds.fromFieldRelativeSpeeds((y * xyMod), (x * xyMod), (spin * spinMod), gyroRotation2d);
+    if (isFieldOriented) {
+      speeds = ChassisSpeeds.fromFieldRelativeSpeeds((y * xyMod), (x * xyMod), (spin * rotationMod), gyroRotation2d);
     } else {
-      speeds = ChassisSpeeds.fromFieldRelativeSpeeds((y * xyMod), (x * xyMod), (spin * spinMod), new Rotation2d(0));
+      speeds = new ChassisSpeeds((y * xyMod), (x * xyMod), (spin * rotationMod));
     }
 
     // Convert overall robot speeds and angle into speeds and angles for each wheel module, referred to as module states
@@ -174,14 +169,9 @@ public class SwerveDrive extends SubsystemBase {
 
     // Update Odometry, so the robot knows its position on the field
     modulePositions = new SwerveModulePosition[] {frontRight.getPosition(),
-      frontLeft.getPosition(), backLeft.getPosition(), backRight.getPosition()};
-    
-    if (fieldOrientedSwerveEnabled) {
-      odometry.update(gyroRotation2d, modulePositions);
-    }
-    else if (!fieldOrientedSwerveEnabled) {
-      odometry.update(new Rotation2d(0), modulePositions);
-    }
+        frontLeft.getPosition(), backLeft.getPosition(), backRight.getPosition()};
+
+    odometry.update(gyroRotation2d, modulePositions);
 
     frontRight.setOutputs();
     frontLeft.setOutputs();
@@ -194,8 +184,12 @@ public class SwerveDrive extends SubsystemBase {
    * 
    * @return The Pose2d of the robot
    */
-  public static Pose2d getPose() {
+  public Pose2d getPose() {
     return odometry.getPoseMeters();
+  }
+
+  public void resetPose(Pose2d pose) {
+    odometry.resetPosition(gyroRotation2d, modulePositions, pose);
   }
 
   /**
@@ -203,8 +197,16 @@ public class SwerveDrive extends SubsystemBase {
    * 
    * @return The Rotation2d of the robot
    */
-  public static Rotation2d getRotation() {
+  public Rotation2d getRotation() {
     return gyroRotation2d;
+  }
+
+  public ChassisSpeeds getRobotRelativeSpeeds() {
+    return kinematics.toChassisSpeeds(moduleStates);
+  }
+
+  public void driveRobotRelative(ChassisSpeeds chassisSpeeds) {
+    calculateSpeedsAndAngles(chassisSpeeds.vxMetersPerSecond, chassisSpeeds.vyMetersPerSecond, chassisSpeeds.omegaRadiansPerSecond, 1, 1, false);;
   }
 
   /**
@@ -227,17 +229,7 @@ public class SwerveDrive extends SubsystemBase {
     // Back right module state
     backRight.moduleState = new SwerveModuleState(moduleStates[3].speedMetersPerSecond,
         new Rotation2d(moduleStates[3].angle.getRadians()));
-    //System.out.println(odometry.getPoseMeters().getX());
-    optimizeAndSetOutputs();
-  }
 
-  /**
-   * Stop the robot's movement by setting all speeds to 0.
-   */
-  public static void stop() {
-    System.out.println("End X:" + odometry.getPoseMeters().getX());
-    System.out.println("End Y:" + odometry.getPoseMeters().getY());
-    calculateSpeedsAndAngles(0.0, 0.0, 0.0, 1.0, 1.0);
     optimizeAndSetOutputs();
   }
 }

@@ -10,6 +10,7 @@ import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.ControlType;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.SparkMaxRelativeEncoder;
@@ -44,7 +45,13 @@ public class Wheel extends SubsystemBase {
   * @param moduleLocationY
   *     Y position of the wheel module relative to the center of the robot in meters.
   */
-  public Wheel(double moduleLocationX, double moduleLocationY) {
+  public Wheel(int driveCANID, int steerCANID, double moduleLocationX, double moduleLocationY) {
+    drive = new CANSparkMax(driveCANID, MotorType.kBrushless);
+    steer = new TalonSRX(steerCANID);
+    initEncodersAndPIDControllers();
+    updatePIDValues(Constants.driveFeedForward, Constants.driveProportional,
+        Constants.driveIntegral, Constants.driveDerivative, Constants.steerFeedForward,
+        Constants.steerProportional, Constants.steerIntegral, Constants.steerDerivative);
     location = new Translation2d(moduleLocationX, moduleLocationY);
   }
 
@@ -61,7 +68,8 @@ public class Wheel extends SubsystemBase {
     steer.configSelectedFeedbackSensor(FeedbackDevice.Analog);
 
     // Define what encoder the object "driveEncoder" refers to
-    driveEncoder = drive.getEncoder(SparkMaxRelativeEncoder.Type.kHallSensor, 42);
+    driveEncoder = drive.getEncoder(SparkMaxRelativeEncoder.Type.kHallSensor,
+    Constants.driveEncoderCountsPerRevolution);
     
     // Zero relative encoders, just in case
     driveEncoder.setPosition(0);
