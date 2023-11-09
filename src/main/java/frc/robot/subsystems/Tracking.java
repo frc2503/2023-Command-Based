@@ -10,10 +10,9 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.swervesubsystem.SwerveDrive;
 
 public class Tracking extends SubsystemBase {
-  public static NetworkTableInstance inst = NetworkTableInstance.getDefault();
+  private static NetworkTableInstance inst = NetworkTableInstance.getDefault();
   public static NetworkTable armLimelight = inst.getTable("limelight-arm");
   public static NetworkTableEntry armHasTarget = armLimelight.getEntry("tv");
   public static NetworkTableEntry armTargetOffsetH = armLimelight.getEntry("tx");
@@ -30,62 +29,36 @@ public class Tracking extends SubsystemBase {
   public static NetworkTableEntry intakeTargetSkew = intakeLimelight.getEntry("ts");
   public static NetworkTableEntry intakePipeline = intakeLimelight.getEntry("pipeline");
   private static Constraints PIDConstraints = new Constraints(1, .5);
-  private static ProfiledPIDController PID = new ProfiledPIDController(1, 0, 0, PIDConstraints);
+  public static ProfiledPIDController PID = new ProfiledPIDController(1, 0, 0, PIDConstraints);
 
   public Tracking() {
   }
 
   /**
-   * Center the robot on a pole.
+   * Select the proper pipeline to target a pole
    */
-  public static void centerOnPole() {
+  public static void selectPoleTargeting() {
     armPipeline.setValue(0);
-    if (armTargetOffsetH.getDouble(0) >= 1) {
-      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(armTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0, true);
-    }
-    else {
-      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(armTargetOffsetH.getDouble(0), 0.0), -PID.calculate(armTargetOffsetV.getDouble(0), 0.0), 0.0, .1, 0.0, true);
-    }
-    SwerveDrive.optimizeAndSetOutputs();
   }
 
   /**
-   * Center the robot on a platform.
+   * Select the proper pipeline to target a platform
    */
-  public static void centerOnPlatform() {
+  public static void selectPlatformTargeting() {
     armPipeline.setValue(1);
-    if (armTargetOffsetH.getDouble(0) >= 1) {
-      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(armTargetOffsetH.getDouble(0), 0.0), 0.0, 0.0, .1, 0.0, true);
-    }
-    else {
-      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(armTargetOffsetH.getDouble(0), 0.0), -PID.calculate(armTargetOffsetV.getDouble(0), 0.0), 0.0, .1, 0.0, true);
-    }
-    SwerveDrive.optimizeAndSetOutputs();
   }
 
   /**
-   * Center the robot on a cone.
+   * Select the proper pipeline to target a platform
    */
-  public static void centerOnCone() {
+  public static void selectConeTargeting() {
     intakePipeline.setValue(0);
-    if(Math.abs(intakeTargetOffsetH.getDouble(0)) >= 1) { //If centered on the cone with deadzone, move forward. Default prevents move
-      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(intakeTargetOffsetH.getDouble(0), 0.0), 0, 0.0, .1, 0.0, true);
-    } else {
-      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(intakeTargetOffsetH.getDouble(0), 0.0), 1, 0.0, .1, 0.0, true);
-    }
-    SwerveDrive.optimizeAndSetOutputs();
   }
-  
+
   /**
-   * Center the robot on a cube.
+   * Select the proper pipeline to target a platform
    */
-  public static void centerOnCube() {
+  public static void selectCubeTargeting() {
     intakePipeline.setValue(1);
-    if(Math.abs(intakeTargetOffsetH.getDouble(0)) >= 1) { //If centered on the cube with deadzone, move forward. Default prevents move
-      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(intakeTargetOffsetH.getDouble(0), 0.0), 0, 0.0, .1, 0.0, true);
-    } else {
-      SwerveDrive.calculateSpeedsAndAngles(-PID.calculate(intakeTargetOffsetH.getDouble(0), 0.0), 1, 0.0, .1, 0.0, true);
-    }
-    SwerveDrive.optimizeAndSetOutputs();
   }
 }
