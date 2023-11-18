@@ -34,7 +34,7 @@ public class Wheel extends SubsystemBase {
   private double steerAngRad = 0.0;
   private double steerFullRot = 0.0;
   Translation2d location;
-  SwerveModuleState moduleState;
+  SwerveModuleState desiredState;
   private boolean isInput = false;
 
   /**
@@ -138,18 +138,18 @@ public class Wheel extends SubsystemBase {
     // Determine if the distance between the desired angle and the current angle is less than or equal to 90
     // This is to determine whether the drive motors should be driven forward or backward.
     // If the difference between the desired and current positions is less than or equal to 90 degrees, then...
-    if ((Math.abs(moduleState.angle.getRadians() - steerAngRad) <= (Math.PI / 2)) || (Math.abs(moduleState.angle.getRadians() - steerAngRad) >= ((3 * Math.PI) / 2))) {
+    if ((Math.abs(desiredState.angle.getRadians() - steerAngRad) <= (Math.PI / 2)) || (Math.abs(desiredState.angle.getRadians() - steerAngRad) >= ((3 * Math.PI) / 2))) {
       // If the wheel would have to cross into a new rotation to travel the shortest distance to the desired angle, then...
-      if (Math.abs(moduleState.angle.getRadians() - steerAngRad) >= ((3 * Math.PI) / 2)) {
+      if (Math.abs(desiredState.angle.getRadians() - steerAngRad) >= ((3 * Math.PI) / 2)) {
         // If the difference is positive, then...
-        if (moduleState.angle.getRadians() > steerAngRad) {
+        if (desiredState.angle.getRadians() > steerAngRad) {
           // Subtract 2pi from the desired angle to show the PID controller later that the shortest distance is to cross 0
-          moduleState = new SwerveModuleState(moduleState.speedMetersPerSecond, new Rotation2d(moduleState.angle.getRadians() - (2 * Math.PI)));
+          desiredState = new SwerveModuleState(desiredState.speedMetersPerSecond, new Rotation2d(desiredState.angle.getRadians() - (2 * Math.PI)));
         }
         // If the difference is negative, then...
         else {
           // Add 2pi to the desired angle to show the PID controller later that the shortest distance is to cross 2pi
-          moduleState = new SwerveModuleState(moduleState.speedMetersPerSecond, new Rotation2d(moduleState.angle.getRadians() + (2 * Math.PI)));
+          desiredState = new SwerveModuleState(desiredState.speedMetersPerSecond, new Rotation2d(desiredState.angle.getRadians() + (2 * Math.PI)));
         }
       }
 
@@ -157,22 +157,22 @@ public class Wheel extends SubsystemBase {
     // If the difference between the desired and current positions is greater than 90 degrees, then...
     else {
       // If the difference is positive, then...
-      if (moduleState.angle.getRadians() > steerAngRad) {
+      if (desiredState.angle.getRadians() > steerAngRad) {
         // Invert the drive motor output, and flip the desired angle by subtracting pi
-        moduleState = new SwerveModuleState(-moduleState.speedMetersPerSecond, new Rotation2d(moduleState.angle.getRadians() - Math.PI));
+        desiredState = new SwerveModuleState(-desiredState.speedMetersPerSecond, new Rotation2d(desiredState.angle.getRadians() - Math.PI));
       }
       // If the difference is negative, then...
       else {
         // Invert the drive motor output, and flip the desired angle by adding pi
-        moduleState = new SwerveModuleState(-moduleState.speedMetersPerSecond, new Rotation2d(moduleState.angle.getRadians() + Math.PI));
+        desiredState = new SwerveModuleState(-desiredState.speedMetersPerSecond, new Rotation2d(desiredState.angle.getRadians() + Math.PI));
       }
     }
 
     // Re-invert the angle, so the PID controller has a good input
-    moduleState = new SwerveModuleState(moduleState.speedMetersPerSecond, new Rotation2d(((2 * Math.PI) - moduleState.angle.getRadians()) + (steerFullRot * (2 * Math.PI))));
+    desiredState = new SwerveModuleState(desiredState.speedMetersPerSecond, new Rotation2d(((2 * Math.PI) - desiredState.angle.getRadians()) + (steerFullRot * (2 * Math.PI))));
 
     // Check if any input is being sent, to prevent wheels from rotating to 0 when no input. 
-    if (moduleState.speedMetersPerSecond != 0) {
+    if (desiredState.speedMetersPerSecond != 0) {
       isInput = true;
     }
     else {
@@ -190,13 +190,13 @@ public class Wheel extends SubsystemBase {
     // This causes a problem because the drive wheel speed does not instantly go to zero, causing the robot's direction to change
     // This if statement fixes this issue by only changing the angle of the wheel if and only if any of the desired robot speeds are greater than 0
     if (isInput == true) {
-      steer.set(ControlMode.Position, (moduleState.angle.getDegrees() / 360.0) * Constants.steerEncoderCountsPerRevolution);
+      steer.set(ControlMode.Position, (desiredState.angle.getDegrees() / 360.0) * Constants.steerEncoderCountsPerRevolution);
     }
 
     //steer.set(ControlMode.Position, 0);
 
     // Tell the drive motor to drive the wheels at the correct speed
-    drivePIDController.setReference((((moduleState.speedMetersPerSecond / ((4 / 39.37) * Math.PI)) * 60) / .15), ControlType.kVelocity);
+    drivePIDController.setReference((((desiredState.speedMetersPerSecond / ((4 / 39.37) * Math.PI)) * 60) / .15), ControlType.kVelocity);
   }
 
   public SwerveModulePosition getPosition() {

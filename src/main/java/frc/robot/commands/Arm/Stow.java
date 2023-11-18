@@ -4,6 +4,7 @@
 
 package frc.robot.commands.Arm;
 
+import com.revrobotics.CANSparkMax.ControlType;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.subsystems.Arm;
 
@@ -30,7 +31,13 @@ public class Stow extends CommandBase {
   @Override
   public void execute() {
     if (Arm.hasBeenZeroed) {
-      isFinished = Arm.stow();
+      if (Math.abs(Arm.armExtend.getEncoder().getPosition()) > .6) {
+        Arm.armExtendPIDController.setReference(0, ControlType.kPosition);
+      } else {
+        Arm.armAnglePIDController.setReference(0, ControlType.kPosition);
+        Arm.armExtendPIDController.setReference(0, ControlType.kPosition);
+      }
+      isFinished = Math.abs(Arm.armExtend.getEncoder().getPosition()) <= .6 && Math.abs(Arm.armAngle.getEncoder().getPosition()) <= 1;
     } else {
       isFinished = true;
     }

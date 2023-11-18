@@ -41,9 +41,4 @@ public class Robot extends TimedRobot {
       autonomousCommand.schedule();
     }
   }
-
-  //Autonomous repeat
-  @Override
-  public void autonomousPeriodic() {
-  }
 }

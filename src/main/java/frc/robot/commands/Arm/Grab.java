@@ -4,6 +4,8 @@
 
 package frc.robot.commands.Arm;
 
+import com.revrobotics.CANSparkMax.ControlType;
+
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.subsystems.Arm;
 
@@ -25,7 +27,18 @@ public class Grab extends CommandBase {
   @Override
   public void execute() {
     if (Arm.hasBeenZeroed) {
-      isFinished = Arm.grab();
+      if (Arm.armAngle.getEncoder().getPosition() < -7 & Arm.armExtend.getEncoder().getPosition() < -43) {
+        Arm.armExtendPIDController.setReference(-52, ControlType.kPosition);
+      } else if (Arm.armAngle.getEncoder().getPosition() > -3 & Arm.armExtend.getEncoder().getPosition() < -.6) {
+        Arm.armExtendPIDController.setReference(0, ControlType.kPosition);
+      } else if (Arm.armAngle.getEncoder().getPosition() > -4) {
+        Arm.armAnglePIDController.setReference(-6.5 - Arm.armAngleMod, ControlType.kPosition);
+      } else {
+        Arm.armAnglePIDController.setReference(-6.5 - Arm.armAngleMod, ControlType.kPosition);
+        Arm.armExtendPIDController.setReference(-52, ControlType.kPosition);
+      }
+      isFinished = Math.abs(Math.abs(Arm.armAngle.getEncoder().getPosition()) - 6.5) <= 1 &&
+      Math.abs(Math.abs(Arm.armExtend.getEncoder().getPosition()) - 41) <= 1;
     } else {
       isFinished = true;
     }

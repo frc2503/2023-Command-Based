@@ -5,7 +5,6 @@
 package frc.robot.subsystems;
 
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.SparkMaxRelativeEncoder;
@@ -18,16 +17,16 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
 public class Arm extends SubsystemBase {
-  private static CANSparkMax armAngle = new CANSparkMax(Constants.armAngleCANID, MotorType.kBrushless);
-  private static SparkMaxPIDController armAnglePIDController = armAngle.getPIDController();
-  private static CANSparkMax armExtend = new CANSparkMax(Constants.armExtendCANID, MotorType.kBrushless);
-  static SparkMaxPIDController armExtendPIDController = armExtend.getPIDController();
+  public static CANSparkMax armAngle = new CANSparkMax(Constants.armAngleCANID, MotorType.kBrushless);
+  public static SparkMaxPIDController armAnglePIDController = armAngle.getPIDController();
+  public static CANSparkMax armExtend = new CANSparkMax(Constants.armExtendCANID, MotorType.kBrushless);
+  public static SparkMaxPIDController armExtendPIDController = armExtend.getPIDController();
 
   private static Compressor pump = new Compressor(0, PneumaticsModuleType.CTREPCM);
   private static DoubleSolenoid grabber = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 2, 3);
   private static DoubleSolenoid limelightPiston = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1);
 
-  private static DigitalInput limitSwitch = new DigitalInput(0);
+  public static DigitalInput limitSwitch = new DigitalInput(0);
   public static boolean hasBeenZeroed = false;
 
   public static double armAngleMod = 0;
@@ -57,68 +56,6 @@ public class Arm extends SubsystemBase {
     grabber.set(Value.kForward);
     limelightPiston.set(Value.kForward);
   }
-
-  public static boolean zeroArm() {
-    if (!limitSwitch.get()) {
-      hasBeenZeroed = true;
-      armExtend.getEncoder().setPosition(0);
-      armExtendPIDController.setReference(0, ControlType.kPosition);
-    }
-    else {
-      armExtend.set(.2);
-    }
-    return hasBeenZeroed;
-  }
-
-  public static boolean stow() {
-    if (Math.abs(armExtend.getEncoder().getPosition()) > .6) {
-      Arm.armExtendPIDController.setReference(0, ControlType.kPosition);
-    } else {
-      Arm.armAnglePIDController.setReference(0, ControlType.kPosition);
-      Arm.armExtendPIDController.setReference(0, ControlType.kPosition);
-    }
-    return Math.abs(armExtend.getEncoder().getPosition()) <= .6 && Math.abs(armAngle.getEncoder().getPosition()) <= 1;
-  }
-
-  public static boolean grab() {
-    if (armAngle.getEncoder().getPosition() < -7 & armExtend.getEncoder().getPosition() < -43) {
-      armExtendPIDController.setReference(-52, ControlType.kPosition);
-    } else if (armAngle.getEncoder().getPosition() > -3 & armExtend.getEncoder().getPosition() < -.6) {
-      armExtendPIDController.setReference(0, ControlType.kPosition);
-    } else if (armAngle.getEncoder().getPosition() > -4) {
-      armAnglePIDController.setReference(-6.5 - armAngleMod, ControlType.kPosition);
-    } else {
-      armAnglePIDController.setReference(-6.5 - armAngleMod, ControlType.kPosition);
-      armExtendPIDController.setReference(-52, ControlType.kPosition);
-    }
-    return Math.abs(Math.abs(armAngle.getEncoder().getPosition()) - 6.5) <= 1 &&
-    Math.abs(Math.abs(armExtend.getEncoder().getPosition()) - 41) <= 1;
-  }
-
-  public static boolean placeLow() {
-    if (armAngle.getEncoder().getPosition() > -6) {
-      armAnglePIDController.setReference(-19 - armAngleMod, ControlType.kPosition);
-      armExtendPIDController.setReference(0, ControlType.kPosition);
-    } else {
-      armAnglePIDController.setReference(-19 - armAngleMod, ControlType.kPosition);
-      armExtendPIDController.setReference(-37, ControlType.kPosition);
-    }
-    return Math.abs(Math.abs(armAngle.getEncoder().getPosition()) - 17) <= 1
-    && Math.abs(Math.abs(armExtend.getEncoder().getPosition()) - 37) <= 1;
-  }
-
-  public static boolean placeHigh() {
-    if (armAngle.getEncoder().getPosition() > -6) {
-      armAnglePIDController.setReference(-23 - armAngleMod, ControlType.kPosition);
-      armExtendPIDController.setReference(0, ControlType.kPosition);
-    } else {
-      armAnglePIDController.setReference(-23 - armAngleMod, ControlType.kPosition);
-      armExtendPIDController.setReference(-85, ControlType.kPosition);
-    }
-    return Math.abs(Math.abs(armAngle.getEncoder().getPosition()) - 21) <= 1
-    && Math.abs(Math.abs(armExtend.getEncoder().getPosition()) - 85) <= 1;
-  }
-
   /**
    * Command the robot to toggle the grabber.
    */

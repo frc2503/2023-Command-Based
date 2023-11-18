@@ -9,19 +9,19 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.shuffleboard.SimpleWidget;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import frc.swervesubsystem.SwerveDrive;
 
 public class ShuffleBoard extends SubsystemBase {
-  private double[] motorCurrents = new double[] {0, 0, 0, 0};
-
+  private double[] motorCurrents = new double[] { SwerveDrive.frontLeft.drive.getOutputCurrent(),
+    SwerveDrive.frontRight.drive.getOutputCurrent(), SwerveDrive.backLeft.drive.getOutputCurrent(),
+    SwerveDrive.backRight.drive.getOutputCurrent()};
   private ShuffleboardTab liveWindow = Shuffleboard.getTab("liveWindow");
 
-  private SimpleWidget FFGain = liveWindow.add("FFGain", 0.000175);
-  private SimpleWidget PGain = liveWindow.add("PGain", 0.00001);
-  private SimpleWidget IGain = liveWindow.add("IGain", 0.0000004);
-  private SimpleWidget DGain = liveWindow.add("DGain", 0.0);
-  /** Creates a new ShuffleBoard. */
-  public ShuffleBoard() {}
+  private SimpleWidget FFGain = liveWindow.add("FFGain", Constants.driveFeedForward);
+  private SimpleWidget PGain = liveWindow.add("PGain", Constants.driveProportional);
+  private SimpleWidget IGain = liveWindow.add("IGain", Constants.driveIntegral);
+  private SimpleWidget DGain = liveWindow.add("DGain", Constants.driveDerivative);
 
   @Override
   public void periodic() {

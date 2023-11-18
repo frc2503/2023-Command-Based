@@ -16,6 +16,14 @@ public final class Constants {
   public static final int rightStickPort = 1;
   public static final int leftStickPort = 0;
 
+  public static final double joystickXDeadzone = .1;
+  public static final double joystickYDeadzone = .1;
+  public static final double joystickTwistDeadzone = .2;
+
+  public static final double joystickXPower = 2;
+  public static final double joystickYPower = 2;
+  public static final double joystickTwistPower = 2;
+
   // Distance from center for wheels. Currently assumes rectangular wheel arrangement
   public static final double frontWheelPosition = 0.2604;
   public static final double backWheelPosition = -0.2604;
@@ -64,4 +72,10 @@ public final class Constants {
 
   // Swerve drive maximum acceleration in m/s²
   public static final double swerveMaxAcceleration = 1;
+
+  // The amount to multiply the translation speed of the robot by when the translation speed modifier input is at its minimum
+  public static final double swerveMaxTranslationModifier = 1/2;
+
+  // The amount to multiply the rotation speed of the robot by when the rotation speed modifier input is at its minimum
+  public static final double swerveMaxRotationModifier = 1/2;
 }

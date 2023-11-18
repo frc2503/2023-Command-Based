@@ -53,21 +53,21 @@ public class Drive extends CommandBase {
     rotationMod = rotationModSupplier.getAsDouble();
     isFieldOriented = isFieldOrientedSupplier.getAsBoolean();
 
-    if (Math.abs(x) < 0.1) {
+    if (Math.abs(x) < Constants.joystickXDeadzone) {
       x = 0.0;
     }
-    if (Math.abs(y) < 0.1) {
+    if (Math.abs(y) < Constants.joystickYDeadzone) {
       y = 0.0;
     }
-    if (Math.abs(rot) < 0.2) {
+    if (Math.abs(rot) < Constants.joystickTwistDeadzone) {
       rot = 0.0;
     }
 
-    x = Math.copySign(Math.pow(x, 2.0), x) * Constants.swerveMaxVelocity;
-    y = -Math.copySign(Math.pow(y, 2.0), y) * Constants.swerveMaxVelocity;
-    rot = Math.copySign(Math.pow(rot, 2.0), rot) * Constants.swerveMaxVelocity;
-    translationMod = (1 - ((translationMod + 1) / 2));
-    rotationMod = (1 - ((rotationMod + 1) / 2));
+    x = Math.copySign(Math.pow(x, Constants.joystickXPower), x) * Constants.swerveMaxVelocity;
+    y = -Math.copySign(Math.pow(y, Constants.joystickYPower), y) * Constants.swerveMaxVelocity;
+    rot = Math.copySign(Math.pow(rot, Constants.joystickTwistPower), rot) * Constants.swerveMaxVelocity;
+    translationMod = (1 - ((translationMod + 1) * Constants.swerveMaxTranslationModifier));
+    rotationMod = (1 - ((rotationMod + 1) * Constants.swerveMaxRotationModifier));
     isFieldOriented = !isFieldOriented;
 
     SwerveDrive.calculateSpeedsAndAngles(x, y, rot, translationMod, rotationMod, isFieldOriented);

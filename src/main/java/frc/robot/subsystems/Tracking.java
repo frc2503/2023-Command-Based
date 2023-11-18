@@ -10,6 +10,7 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 
 public class Tracking extends SubsystemBase {
   private static NetworkTableInstance inst = NetworkTableInstance.getDefault();
@@ -28,11 +29,8 @@ public class Tracking extends SubsystemBase {
   public static NetworkTableEntry intakeTargetArea = intakeLimelight.getEntry("ta");
   public static NetworkTableEntry intakeTargetSkew = intakeLimelight.getEntry("ts");
   public static NetworkTableEntry intakePipeline = intakeLimelight.getEntry("pipeline");
-  private static Constraints PIDConstraints = new Constraints(1, .5);
+  private static Constraints PIDConstraints = new Constraints(Constants.swerveMaxVelocity, .5);
   public static ProfiledPIDController PID = new ProfiledPIDController(1, 0, 0, PIDConstraints);
-
-  public Tracking() {
-  }
 
   /**
    * Select the proper pipeline to target a pole

@@ -4,6 +4,8 @@
 
 package frc.robot.commands.Arm;
 
+import com.revrobotics.CANSparkMax.ControlType;
+
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.subsystems.Arm;
 
@@ -25,7 +27,15 @@ public class High extends CommandBase {
   @Override
   public void execute() {
     if (Arm.hasBeenZeroed) {
-      isFinished = Arm.placeHigh();
+      if (Arm.armAngle.getEncoder().getPosition() > -6) {
+        Arm.armAnglePIDController.setReference(-23 - Arm.armAngleMod, ControlType.kPosition);
+        Arm.armExtendPIDController.setReference(0, ControlType.kPosition);
+      } else {
+        Arm.armAnglePIDController.setReference(-23 - Arm.armAngleMod, ControlType.kPosition);
+        Arm.armExtendPIDController.setReference(-85, ControlType.kPosition);
+      }
+      isFinished = Math.abs(Math.abs(Arm.armAngle.getEncoder().getPosition()) - 21) <= 1
+      && Math.abs(Math.abs(Arm.armExtend.getEncoder().getPosition()) - 85) <= 1;
     } else {
       isFinished = true;
     }

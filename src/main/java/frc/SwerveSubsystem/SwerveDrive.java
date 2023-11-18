@@ -27,15 +27,15 @@ import frc.robot.Constants;
  */
 public class SwerveDrive extends SubsystemBase{
   // Define all objects and varibles used by this class
-  public static AHRS gyro = new AHRS(SerialPort.Port.kMXP);
+  private static AHRS gyro = new AHRS(SerialPort.Port.kMXP);
   public static Rotation2d gyroRotation2d;
 
-  public static SwerveDriveKinematics kinematics;
-  public static SwerveDriveOdometry odometry;
+  private static SwerveDriveKinematics kinematics;
+  private static SwerveDriveOdometry odometry;
 
   private static ChassisSpeeds speeds = new ChassisSpeeds();
-  private static SwerveModuleState[] moduleStates;
-  public static SwerveModulePosition[] modulePositions;
+  private static SwerveModuleState[] desiredStates;
+  private static SwerveModulePosition[] modulePositions;
   
   public static Wheel frontRight = new Wheel(Constants.frontRightDriveCANID,
   Constants.frontRightSteerCANID, Constants.frontWheelPosition, Constants.rightWheelPosition);
@@ -76,7 +76,11 @@ public class SwerveDrive extends SubsystemBase{
 
   @Override
   public void periodic() {
+    // Update Odometry, so the robot knows its position on the field
     gyroRotation2d = gyro.getRotation2d().unaryMinus();
+    modulePositions = new SwerveModulePosition[] {frontRight.getPosition(),
+      frontLeft.getPosition(), backLeft.getPosition(), backRight.getPosition()};
+    odometry.update(gyroRotation2d, modulePositions);
   }
 
   public static void resetGyro() {
@@ -111,6 +115,10 @@ public class SwerveDrive extends SubsystemBase{
     backRight.updatePIDValues(DFF, DP, DI, DD, SFF, SP, SI, SD);
   }
 
+  public static void calculateSpeedsAndAngles(double x, double y, double spin, boolean isFieldOriented) {
+    calculateSpeedsAndAngles(x, y, spin, 1, 1, isFieldOriented);
+  }
+
   /**
    * Do the math to calculate the speeds and angles for each wheel on the swerve drive.
    * 
@@ -134,19 +142,19 @@ public class SwerveDrive extends SubsystemBase{
     }
 
     // Convert overall robot speeds and angle into speeds and angles for each wheel module, referred to as module states
-    moduleStates = kinematics.toSwerveModuleStates(speeds);
+    desiredStates = kinematics.toSwerveModuleStates(speeds);
 
     // Front left module state
-    frontLeft.moduleState = moduleStates[0];
+    frontLeft.desiredState = desiredStates[0];
 
     // Front right module state
-    frontRight.moduleState = moduleStates[1];
+    frontRight.desiredState = desiredStates[1];
 
     // Back left module state
-    backLeft.moduleState = moduleStates[2];
+    backLeft.desiredState = desiredStates[2];
 
     // Back right module state
-    backRight.moduleState = moduleStates[3];
+    backRight.desiredState = desiredStates[3];
   }
 
   /**
@@ -166,12 +174,6 @@ public class SwerveDrive extends SubsystemBase{
     frontLeft.optimizeAndCalculateVariables();
     backLeft.optimizeAndCalculateVariables();
     backRight.optimizeAndCalculateVariables();
-
-    // Update Odometry, so the robot knows its position on the field
-    modulePositions = new SwerveModulePosition[] {frontRight.getPosition(),
-        frontLeft.getPosition(), backLeft.getPosition(), backRight.getPosition()};
-
-    odometry.update(gyroRotation2d, modulePositions);
 
     frontRight.setOutputs();
     frontLeft.setOutputs();
@@ -202,39 +204,15 @@ public class SwerveDrive extends SubsystemBase{
   }
 
   public ChassisSpeeds getRobotRelativeSpeeds() {
-    return kinematics.toChassisSpeeds(moduleStates);
+    return kinematics.toChassisSpeeds(desiredStates);
   }
 
   public void driveRobotRelative(ChassisSpeeds chassisSpeeds) {
-    calculateSpeedsAndAngles(chassisSpeeds.vxMetersPerSecond, chassisSpeeds.vyMetersPerSecond, chassisSpeeds.omegaRadiansPerSecond, 1, 1, false);;
-  }
-
-  /**
-   * Set the module state for each wheel, essentially passing the desired speed and angle to each wheel.
-   * 
-   * @param DesiredStates The desired state of all the wheels
-   */
-  public static void setModuleStates(SwerveModuleState[] DesiredStates) {    
-    SwerveDriveKinematics.desaturateWheelSpeeds(DesiredStates, Constants.swerveMaxVelocity);
-    moduleStates = DesiredStates;
-    // Front left module state
-    frontLeft.moduleState = new SwerveModuleState(moduleStates[0].speedMetersPerSecond,
-        new Rotation2d(moduleStates[0].angle.getRadians()));
-    // Front right module state
-    frontRight.moduleState = new SwerveModuleState(moduleStates[1].speedMetersPerSecond,
-        new Rotation2d(moduleStates[1].angle.getRadians()));
-    // Back left module state
-    backLeft.moduleState = new SwerveModuleState(moduleStates[2].speedMetersPerSecond,
-        new Rotation2d(moduleStates[3].angle.getRadians()));
-    // Back right module state
-    backRight.moduleState = new SwerveModuleState(moduleStates[3].speedMetersPerSecond,
-        new Rotation2d(moduleStates[3].angle.getRadians()));
-
-    optimizeAndSetOutputs();
+    calculateSpeedsAndAngles(chassisSpeeds.vxMetersPerSecond, chassisSpeeds.vyMetersPerSecond, chassisSpeeds.omegaRadiansPerSecond, false);;
   }
 
   public static void stop() {
-    calculateSpeedsAndAngles(0, 0, 0, 0, 0, true);
+    calculateSpeedsAndAngles(0, 0, 0, true);
     optimizeAndSetOutputs();
   }
 }
